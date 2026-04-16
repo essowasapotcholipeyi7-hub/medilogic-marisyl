@@ -1,10 +1,31 @@
 import gspread
 from google.oauth2.service_account import Credentials
 import os
+import json
 from datetime import datetime
 
 class SheetsService:
     def __init__(self):
+        SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
+                  'https://www.googleapis.com/auth/drive']
+        SPREADSHEET_ID = '1Sv7GQhBGS5UBZ0_QtG23c8SKiNBgEMI6mh60VZSLc3o'
+        
+        # Essayer de lire depuis variable d'environnement (Render)
+        creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+        
+        if creds_json:
+            try:
+                print("✅ Lecture des credentials depuis variable d'environnement")
+                creds_dict = json.loads(creds_json)
+                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+                self.client = gspread.authorize(creds)
+                self.sheet = self.client.open_by_key(SPREADSHEET_ID)
+                print("✅ Connecté à Google Sheets")
+                return
+            except Exception as e:
+                print(f"❌ Erreur avec variable d'environnement: {e}")
+        
+        # Fallback: lire depuis fichier (local)
         creds_path = os.path.join(os.path.dirname(__file__), 'credentials.json')
         
         if not os.path.exists(creds_path):
@@ -12,11 +33,8 @@ class SheetsService:
             self.client = None
             return
         
-        SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
-                  'https://www.googleapis.com/auth/drive']
-        SPREADSHEET_ID = '1Sv7GQhBGS5UBZ0_QtG23c8SKiNBgEMI6mh60VZSLc3o'
-        
         try:
+            print("✅ Lecture des credentials depuis fichier")
             creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
             self.client = gspread.authorize(creds)
             self.sheet = self.client.open_by_key(SPREADSHEET_ID)

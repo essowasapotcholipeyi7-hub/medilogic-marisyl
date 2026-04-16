@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediLogic - MARISYL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .loading { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .tab-btn { padding: 10px 18px; border-radius: 12px; font-weight: 600; transition: all 0.3s; cursor: pointer; background: #f3f4f6; color: #4b5563; border: none; }
+        .tab-active { background: linear-gradient(135deg, #4169E1 0%, #1E3A8A 100%); color: white !important; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        #section-dashboard { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 10px; color: white; z-index: 2000; animation: slideIn 0.3s ease; }
+        .toast-success { background: #10B981; }
+        .toast-error { background: #EF4444; }
+        .toast-info { background: #3B82F6; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .progress-bar { transition: width 0.5s ease; }
+    </style>
+</head>
+<body>
+
+<!-- PAGE DE CONNEXION -->
+<div id="pageConnexion" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+        <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-chart-line text-white text-3xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800">MARISYL</h1>
+        <p class="text-gray-500 text-sm mb-6">MediLogic - Gestion de crédit</p>
+        <div id="msgErreur" class="hidden bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm"></div>
+        <input type="password" id="motDePasse" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-4" placeholder="Mot de passe">
+        <button onclick="connexion()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl">Se connecter</button>
+        <p class="text-xs text-gray-400 mt-4">🔒 Contactez l'administrateur pour le mot de passe</p>
+    </div>
+</div>
+
+<!-- APPLICATION -->
+<div id="pageApp" style="display: none;">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">MARISYL</h1>
+                    <p class="text-[10px] text-gray-400">MediLogic - Boutik</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openAddClientModal()" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm"><i class="fas fa-plus mr-1"></i> Client</button>
+                <button onclick="deconnexion()" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">Déconnexion</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- ONGLETS -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button onclick="showSection('dashboard')" class="tab-btn tab-active" id="tab-dashboard"><i class="fas fa-chart-line mr-1"></i> Dashboard</button>
+            <button onclick="showSection('vente')" class="tab-btn" id="tab-vente"><i class="fas fa-shopping-cart mr-1"></i> Vente directe</button>
+            <button onclick="showSection('manuel')" class="tab-btn" id="tab-manuel"><i class="fas fa-pen-alt mr-1"></i> Saisie manuelle</button>
+            <button onclick="showSection('clients')" class="tab-btn" id="tab-clients"><i class="fas fa-users mr-1"></i> Clients</button>
+            <button onclick="showSection('paiements')" class="tab-btn" id="tab-paiements"><i class="fas fa-credit-card mr-1"></i> Paiements</button>
+            <button onclick="showSection('programmation')" class="tab-btn" id="tab-programmation"><i class="fas fa-calendar mr-1"></i> Programmation</button>
+            <button onclick="showSection('historique')" class="tab-btn" id="tab-historique"><i class="fas fa-history mr-1"></i> Historique</button>
+            <button onclick="showSection('alertes')" class="tab-btn" id="tab-alertes"><i class="fas fa-bell mr-1"></i> Alertes</button>
+            <button onclick="showSection('admin')" class="tab-btn" id="tab-admin"><i class="fas fa-user-shield mr-1"></i> Administration</button>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="section-dashboard" class="section">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-indigo-500">
+                    <div class="text-gray-500 text-sm">Total clients</div>
+                    <div class="text-3xl font-bold" id="statTotalClients">0</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-red-500">
+                    <div class="text-gray-500 text-sm">Total dettes</div>
+                    <div class="text-3xl font-bold" id="statTotalDette">0 FCFA</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-orange-500">
+                    <div class="text-gray-500 text-sm">En retard</div>
+                    <div class="text-3xl font-bold" id="statEnRetard">0</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-green-500">
+                    <div class="text-gray-500 text-sm">Clôturés</div>
+                    <div class="text-3xl font-bold" id="statClotures">0</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-bold mb-4">📋 Derniers clients</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr><th class="p-3">Nom</th><th class="p-3">Téléphone</th><th class="p-3">Total</th><th class="p-3">Solde</th><th class="p-3">Progression</th></tr>
+                            </thead>
+                            <tbody id="derniersClients"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-bold mb-4">⚠️ Alertes récentes</h2>
+                    <div id="alertesList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VENTE DIRECTE (acompte 60%) -->
+        <div id="section-vente" class="section" style="display:none">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-lg font-bold mb-4 text-green-600"><i class="fas fa-shopping-cart mr-2"></i> Vente directe (acompte 60%)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-sm font-medium mb-1">Nom complet *</label><input type="text" id="venteNom" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Téléphone *</label><input type="tel" id="venteTelephone" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Email</label><input type="email" id="venteEmail" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Montant total *</label><input type="number" id="venteMontant" class="w-full border rounded-lg p-2" oninput="calculerVente()"></div>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div><div class="text-sm text-gray-500">Total</div><div class="font-bold text-xl" id="venteTotal">0 FCFA</div></div>
+                        <div><div class="text-sm text-gray-500">Acompte 60%</div><div class="font-bold text-xl text-green-600" id="venteAcompte">0 FCFA</div></div>
+                        <div><div class="text-sm text-gray-500">Solde à échelonner</div><div class="font-bold text-xl text-red-600" id="venteSolde">0 FCFA</div></div>
+                    </div>
+                </div>
+                <button onclick="validerVenteDirecte()" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">✅ Enregistrer la vente</button>
+            </div>
+        </div>
+
+        <!-- SAISIE MANUELLE -->
+        <div id="section-manuel" class="section" style="display:none">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-lg font-bold mb-4 text-blue-600"><i class="fas fa-pen-alt mr-2"></i> Saisie manuelle (crédit existant)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-sm font-medium mb-1">Nom complet *</label><input type="text" id="manuelNom" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Téléphone *</label><input type="tel" id="manuelTelephone" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Email</label><input type="email" id="manuelEmail" class="w-full border rounded-lg p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Montant total *</label><input type="number" id="manuelMontant" class="w-full border rounded-lg p-2" oninput="calculerManuel()"></div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg mb-4 text-center">
+                    <div class="text-sm text-gray-500">Solde à échelonner (100%)</div>
+                    <div class="font-bold text-red-600 text-2xl" id="manuelSolde">0 FCFA</div>
+                </div>
+                <button onclick="validerSaisieManuelle()" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">✅ Enregistrer la dette</button>
+            </div>
+        </div>
+
+        <!-- CLIENTS -->
+        <div id="section-clients" class="section" style="display:none">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                    <h2 class="text-lg font-bold">👥 Liste des clients</h2>
+                    <div class="flex gap-2">
+                        <input type="text" id="searchClient" placeholder="Rechercher..." class="border rounded-lg px-3 py-1 text-sm" onkeyup="filtrerClients()">
+                        <button onclick="exportClientsPDF()" class="bg-red-500 text-white px-3 py-1 rounded text-sm"><i class="fas fa-file-pdf mr-1"></i> PDF</button>
+                        <button onclick="chargerClients()" class="bg-indigo-500 text-white px-3 py-1 rounded text-sm"><i class="fas fa-sync-alt mr-1"></i> Actualiser</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr><th class="p-2">ID</th><th class="p-2">Nom</th><th class="p-2">Téléphone</th><th class="p-2">Email</th><th class="p-2">Total</th><th class="p-2">Solde</th><th class="p-2">Progression</th><th class="p-2">Actions</th></tr>
+                        </thead>
+                        <tbody id="listeClients"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+<!-- PAIEMENTS -->
+<div id="section-paiements" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4">💳 Enregistrer un paiement</h2>
+
+        <!-- Barre de recherche -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">🔍 Rechercher un client</label>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <input type="text" id="searchClientPaiement" placeholder="Tapez le nom, téléphone ou email..." 
+                       class="w-full border rounded-lg p-2 pl-10" onkeyup="filtrerClientsPaiement()">
+            </div>
+            <div class="text-xs text-gray-500 mt-1" id="searchPaiementCount"></div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Client *</label>
+                <select id="paiementClient" class="w-full border rounded-lg p-2" onchange="chargerEcheancesClient()">
+                    <option value="">-- Choisir un client --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Solde actuel</label>
+                <input type="text" id="soldeActuel" class="w-full border rounded-lg p-2 bg-gray-100" readonly>
+            </div>
+        </div>
+        
+        <!-- Liste des échéances du client -->
+        <div id="echeancesClient" class="mt-4">
+            <h3 class="font-bold mb-2">📅 Échéances à payer</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2 border">Date</th>
+                            <th class="p-2 border">Montant dû</th>
+                            <th class="p-2 border">Pénalité</th>
+                            <th class="p-2 border">Total à payer</th>
+                            <th class="p-2 border">Statut</th>
+                            <th class="p-2 border">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="echeancesClientList">
+                        <tr><td colspan="6" class="text-center py-4 text-gray-500">Sélectionnez un client<td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Paiement personnalisé -->
+        <div class="mt-4 pt-4 border-t">
+            <h3 class="font-bold mb-2">💵 Paiement personnalisé</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Montant à payer</label>
+                    <input type="number" id="paiementMontant" class="w-full border rounded-lg p-2" placeholder="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Mode de paiement</label>
+                    <select id="paiementMode" class="w-full border rounded-lg p-2">
+                        <option value="Espèces">💵 Espèces</option>
+                        <option value="Mobile Money">📱 Mobile Money</option>
+                        <option value="Virement">🏦 Virement</option>
+                        <option value="Carte">💳 Carte</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="enregistrerPaiementPersonnalise()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600">
+                        💰 Enregistrer
+                    </button>
+                </div>
+            </div>
+            <div class="mt-2">
+                <label class="block text-sm font-medium mb-1">Commentaire</label>
+                <textarea id="paiementCommentaire" class="w-full border rounded-lg p-2" rows="2" placeholder="Optionnel..."></textarea>
+            </div>
+        </div>
+        
+        <!-- Paiement total -->
+        <div class="mt-4 pt-4 border-t">
+            <button id="btnPayerTotal" onclick="payerTotalClient()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 hidden">
+                💰 PAYER LE SOLDE TOTAL
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PROGRAMMATION -->
+<div id="section-programmation" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <!-- En-tête avec bouton actualiser -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-indigo-600"><i class="fas fa-calendar-alt mr-2"></i> Programmation des échéances</h2>
+            <button onclick="chargerClientsProg()" class="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600 transition">
+                <i class="fas fa-sync-alt mr-1"></i> Actualiser
+            </button>
+        </div>
+        
+        <!-- Barre de recherche -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">🔍 Rechercher un client</label>
+            <input type="text" id="searchClientProg" placeholder="Tapez le nom, téléphone ou email..." 
+                   class="w-full border rounded-lg p-2 mb-2" onkeyup="filtrerClientsProg()">
+            <div class="text-xs text-gray-500" id="searchResultCount"></div>
+        </div>
+        
+        <!-- Liste des clients avec scroll -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">👥 Sélectionner un client</label>
+            <select id="progClient" class="w-full border rounded-lg p-2" size="5" onchange="updateProgMontant()">
+                <option value="">-- Chargement des clients... --</option>
+            </select>
+        </div>
+        
+        <div id="clientInfoProg" class="hidden bg-blue-50 p-3 rounded-lg mb-4">
+            <p><strong>👤 Client:</strong> <span id="clientNomProg"></span></p>
+            <p><strong>📞 Téléphone:</strong> <span id="clientTelProg"></span></p>
+            <p><strong>💰 Solde à programmer:</strong> <span id="clientSoldeProg" class="font-bold text-red-600"></span></p>
+        </div>
+        
+        <div id="configPanelProg" class="hidden border-t pt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">📅 Date première échéance</label>
+                    <input type="date" id="dateDebut" class="w-full border rounded-lg p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">🔄 Périodicité</label>
+                    <div class="flex gap-4 mt-2">
+                        <label><input type="radio" name="periode" value="hebdomadaire"> Hebdomadaire</label>
+                        <label><input type="radio" name="periode" value="mensuel" checked> Mensuel</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">📊 Nombre de tranches</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(2)">2 tranches (50% - 50%)</button>
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(3)">3 tranches (33.3% chacune)</button>
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(4)">4 tranches (25% chacune)</button>
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(5)">5 tranches (20% chacune)</button>
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(6)">6 tranches (16.7% chacune)</button>
+                </div>
+            </div>
+            
+            <div id="apercuProg" class="bg-gray-100 p-4 rounded-lg mt-4 text-gray-500 text-center">
+                Configurez les paiements pour voir l'aperçu
+            </div>
+            
+            <button onclick="genererEtEnregistrerProgrammation()" class="mt-4 w-full bg-indigo-500 text-white py-2 rounded-lg font-semibold hover:bg-indigo-600">
+                📊 Générer et enregistrer l'échéancier
+            </button>
+            
+            <div id="echeancierResultat" class="mt-4 hidden"></div>
+        </div>
+    </div>
+</div>
+
+<!-- HISTORIQUE -->
+<div id="section-historique" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+            <h2 class="text-lg font-bold">📜 Historique des paiements</h2>
+            <div class="flex gap-2">
+                <input type="text" id="searchHistorique" placeholder="🔍 Rechercher par client..." 
+                       class="border rounded-lg px-3 py-1 text-sm" onkeyup="filtrerHistorique()">
+                <button onclick="exporterHistoriquePDF()" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                </button>
+                <button onclick="imprimerHistorique()" class="bg-blue-500 text-white px-3 py-1 rounded text-sm">
+                    <i class="fas fa-print mr-1"></i> Imprimer
+                </button>
+                <button onclick="chargerHistorique()" class="bg-green-500 text-white px-3 py-1 rounded text-sm">
+                    <i class="fas fa-sync-alt mr-1"></i> Actualiser
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-2">Date</th>
+                        <th class="p-2">Client</th>
+                        <th class="p-2">Type</th>
+                        <th class="p-2">Montant</th>
+                        <th class="p-2">Mode</th>
+                        <th class="p-2">Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody id="historiqueList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ALERTES -->
+<div id="section-alertes" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4">🔔 Alertes et rappels</h2>
+        <div id="alertesCompletes" class="space-y-4"></div>
+    </div>
+</div>
+
+        
+<!-- ADMINISTRATION -->
+<div id="section-admin" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4 text-purple-600"><i class="fas fa-user-shield mr-2"></i> Administration</h2>
+        
+        <div id="adminMessage" class="hidden rounded-lg p-3 mb-4 text-sm"></div>
+        
+        <!-- Changer le mot de passe -->
+        <div class="border-b pb-6 mb-6">
+            <h3 class="font-bold mb-3 text-gray-700"><i class="fas fa-key mr-2"></i> Changer le mot de passe</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Ancien mot de passe</label>
+                    <input type="password" id="adminOldPassword" class="w-full border rounded-lg p-2">
+                </div>
+                <div></div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nouveau mot de passe</label>
+                    <input type="password" id="adminNewPassword" class="w-full border rounded-lg p-2">
+                    <p class="text-xs text-gray-500 mt-1">8 caractères min, 1 majuscule, 1 chiffre</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Confirmer</label>
+                    <input type="password" id="adminConfirmPassword" class="w-full border rounded-lg p-2">
+                </div>
+            </div>
+            <button onclick="changerMotDePasse()" class="mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-save mr-1"></i> Changer le mot de passe
+            </button>
+        </div>
+        
+        <!-- Question secrète -->
+        <div class="border-b pb-6 mb-6">
+            <h3 class="font-bold mb-3 text-gray-700"><i class="fas fa-question-circle mr-2"></i> Question secrète</h3>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Question secrète</label>
+                    <input type="text" id="adminQuestion" class="w-full border rounded-lg p-2" placeholder="Quel est le nom de votre premier animal ?">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Réponse</label>
+                    <input type="text" id="adminReponse" class="w-full border rounded-lg p-2" placeholder="Votre réponse">
+                </div>
+            </div>
+            <button onclick="sauvegarderQuestionSecrete()" class="mt-3 bg-green-500 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-save mr-1"></i> Sauvegarder
+            </button>
+        </div>
+        
+        <!-- Email de secours -->
+        <div>
+            <h3 class="font-bold mb-3 text-gray-700"><i class="fas fa-envelope mr-2"></i> Email de secours</h3>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email pour récupération</label>
+                    <input type="email" id="adminEmail" class="w-full border rounded-lg p-2" placeholder="exemple@gmail.com">
+                </div>
+            </div>
+            <button onclick="sauvegarderEmailSecours()" class="mt-3 bg-green-500 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-save mr-1"></i> Sauvegarder
+            </button>
+        </div>
+        
+        <div class="mt-6 p-3 bg-yellow-50 rounded-lg">
+            <p class="text-sm text-yellow-800"><i class="fas fa-info-circle mr-1"></i> Conseil : Gardez ces informations en sécurité. La question secrète et l'email de secours sont utilisés pour réinitialiser le mot de passe.</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- MODAL AJOUT CLIENT -->
+<div id="modalAddClient" class="modal" style="display: none;">
+    <div class="modal-content p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">➕ Nouveau client</h2>
+            <button onclick="closeModal('modalAddClient')" class="text-gray-400 text-2xl">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <input type="text" id="newNom" placeholder="Nom complet *" class="w-full border rounded-lg p-2">
+            <input type="tel" id="newTelephone" placeholder="Téléphone *" class="w-full border rounded-lg p-2">
+            <input type="email" id="newEmail" placeholder="Email" class="w-full border rounded-lg p-2">
+            <input type="number" id="newMontant" placeholder="Montant total *" class="w-full border rounded-lg p-2">
+        </div>
+        <button onclick="ajouterClient()" class="mt-4 w-full bg-green-500 text-white py-2 rounded-lg">✅ Enregistrer</button>
+    </div>
+</div>
+
+<script>
+    // ========== VARIABLES ==========
+    let clients = [];
+
+    // ========== TOAST ==========
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ========== CONNEXION ==========
+    async function connexion() {
+    const pwd = document.getElementById('motDePasse').value;
+    const msgDiv = document.getElementById('msgErreur');
+    
+    // Cacher le message d'erreur au début de chaque tentative
+    msgDiv.style.display = 'none';
+    msgDiv.innerHTML = '';
+    
+    if (!pwd) {
+        msgDiv.style.display = 'block';
+        msgDiv.innerHTML = 'Veuillez entrer le mot de passe';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('pageConnexion').style.display = 'none';
+            document.getElementById('pageApp').style.display = 'block';
+            document.getElementById('motDePasse').value = '';
+            msgDiv.style.display = 'none';
+            chargerDashboard();
+            chargerClients();
+            chargerHistorique();
+            chargerAlertes();
+            chargerSelectClients();
+            chargerClientsProg();
+        } else {
+            msgDiv.style.display = 'block';
+            msgDiv.innerHTML = result.message || 'Mot de passe incorrect';
+            document.getElementById('motDePasse').value = '';
+        }
+    } catch (error) {
+        msgDiv.style.display = 'block';
+        msgDiv.innerHTML = 'Erreur: ' + error.message;
+        document.getElementById('motDePasse').value = '';
+    }
+}    
+    async function deconnexion() {
+        await fetch('/api/logout', { method: 'POST' });
+        document.getElementById('pageConnexion').style.display = 'flex';
+        document.getElementById('pageApp').style.display = 'none';
+    }
+    
+    // ========== NAVIGATION ==========
+    function showSection(section) {
+        document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+        document.getElementById('section-' + section).style.display = 'block';
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+        document.getElementById('tab-' + section).classList.add('tab-active');
+        
+        if (section === 'dashboard') chargerDashboard();
+        if (section === 'clients') chargerClients();
+        if (section === 'historique') chargerHistorique();
+        if (section === 'alertes') chargerAlertes();
+        if (section === 'programmation') {
+        console.log("📋 Chargement de la programmation...");
+        chargerClientsProg();
+    }
+        if (section === 'admin') chargerConfigAdmin();
+}
+    
+    // ========== VENTE DIRECTE ==========
+    function calculerVente() {
+        const montant = parseFloat(document.getElementById('venteMontant').value) || 0;
+        const acompte = montant * 0.6;
+        const solde = montant * 0.4;
+        document.getElementById('venteTotal').innerHTML = montant.toLocaleString() + ' FCFA';
+        document.getElementById('venteAcompte').innerHTML = acompte.toLocaleString() + ' FCFA';
+        document.getElementById('venteSolde').innerHTML = solde.toLocaleString() + ' FCFA';
+    }
+    
+    async function validerVenteDirecte() {
+        const nom = document.getElementById('venteNom').value;
+        const telephone = document.getElementById('venteTelephone').value;
+        const email = document.getElementById('venteEmail').value;
+        const montant_total = parseFloat(document.getElementById('venteMontant').value);
+        
+        if (!nom || !telephone || !montant_total) {
+            showToast("Remplissez tous les champs obligatoires", "error");
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/vente-directe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom, telephone, email, montant_total })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(`✅ Vente enregistrée ! Acompte: ${result.acompte.toLocaleString()} FCFA`, "success");
+                document.getElementById('venteNom').value = '';
+                document.getElementById('venteTelephone').value = '';
+                document.getElementById('venteEmail').value = '';
+                document.getElementById('venteMontant').value = '';
+                calculerVente();
+                chargerDashboard();
+                chargerClients();
+                chargerSelectClients();
+            } else {
+                showToast("❌ " + (result.error || "Erreur"), "error");
+            }
+        } catch (error) {
+            showToast("❌ " + error.message, "error");
+        }
+    }
+    
+    // ========== SAISIE MANUELLE ==========
+    function calculerManuel() {
+        const montant = parseFloat(document.getElementById('manuelMontant').value) || 0;
+        document.getElementById('manuelSolde').innerHTML = montant.toLocaleString() + ' FCFA';
+    }
+    
+    async function validerSaisieManuelle() {
+        const nom = document.getElementById('manuelNom').value;
+        const telephone = document.getElementById('manuelTelephone').value;
+        const email = document.getElementById('manuelEmail').value;
+        const montant_total = parseFloat(document.getElementById('manuelMontant').value);
+        
+        if (!nom || !telephone || !montant_total) {
+            showToast("Remplissez tous les champs obligatoires", "error");
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/saisie-manuelle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom, telephone, email, montant_total })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast("✅ Dette enregistrée avec succès !", "success");
+                document.getElementById('manuelNom').value = '';
+                document.getElementById('manuelTelephone').value = '';
+                document.getElementById('manuelEmail').value = '';
+                document.getElementById('manuelMontant').value = '';
+                calculerManuel();
+                chargerDashboard();
+                chargerClients();
+                chargerSelectClients();
+            } else {
+                showToast("❌ " + (result.error || "Erreur"), "error");
+            }
+        } catch (error) {
+            showToast("❌ " + error.message, "error");
+        }
+    }
+    
+    // ========== DASHBOARD ==========
+    async function chargerDashboard() {
+        try {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            
+            document.getElementById('statTotalClients').innerText = stats.total_clients || 0;
+            document.getElementById('statTotalDette').innerText = (stats.total_dette || 0).toLocaleString() + ' FCFA';
+            document.getElementById('statEnRetard').innerText = stats.en_retard || 0;
+            document.getElementById('statClotures').innerText = stats.clotures || 0;
+            
+            const clientsResp = await fetch('/api/debiteurs');
+            const allClients = await clientsResp.json();
+            const derniers = allClients.slice(-5).reverse();
+            
+            let html = '';
+            for (const c of derniers) {
+                const progression = c.montant_total > 0 ? ((c.montant_total - c.solde_restant) / c.montant_total * 100).toFixed(1) : 0;
+                html += `<tr class="border-b">
+                    <td class="p-3">${c.nom}</td>
+                    <td class="p-3">${c.telephone}</td>
+                    <td class="p-3">${(c.montant_total || 0).toLocaleString()} FCFA</td>
+                    <td class="p-3 font-bold ${c.solde_restant > 0 ? 'text-red-600' : 'text-green-600'}">${(c.solde_restant || 0).toLocaleString()} FCFA</td>
+                    <td class="p-3"><div class="w-24 bg-gray-200 rounded-full h-2"><div class="bg-indigo-600 h-2 rounded-full" style="width: ${progression}%"></div></div><span class="text-xs">${progression}%</span></td>
+                </tr>`;
+            }
+            document.getElementById('derniersClients').innerHTML = html || '<tr><td colspan="5" class="text-center py-4">Aucun client</td></tr>';
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
+    }
+    
+    // ========== CLIENTS ==========
+    async function chargerClients() {
+    const tbody = document.getElementById('listeClients');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="loading"></div> Chargement...<\/td><\/tr>';
+    
+    try {
+        const response = await fetch('/api/debiteurs');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const clients = await response.json();
+        console.log("📊 Clients reçus:", clients); // Debug
+        
+        if (!clients || clients.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">📭 Aucun client<\/td><\/tr>';
+            return;
+        }
+        
+        let html = '';
+        for (const c of clients) {
+            const progression = c.montant_total > 0 ? ((c.montant_total - c.solde_restant) / c.montant_total * 100).toFixed(1) : 0;
+            html += `<tr class="border-b hover:bg-gray-50">
+                <td class="p-2">${c.id}</td>
+                <td class="p-2 font-semibold">${c.nom || ''}</td>
+                <td class="p-2">${c.telephone || ''}</td>
+                <td class="p-2">${c.email || '-'}</td>
+                <td class="p-2 text-right">${(c.montant_total || 0).toLocaleString()} FCFA</td>
+                <td class="p-2 text-right font-bold ${c.solde_restant > 0 ? 'text-red-600' : 'text-green-600'}">${(c.solde_restant || 0).toLocaleString()} FCFA</td>
+                <td class="p-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-24 bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-600 h-2 rounded-full" style="width: ${progression}%"></div>
+                        </div>
+                        <span class="text-xs">${progression}%</span>
+                    </div>
+                </td>
+                <td class="p-2 text-center">
+                    <button onclick="voirContrat(${c.id})" class="bg-blue-500 text-white p-1 rounded mr-1" title="Contrat"><i class="fas fa-file-contract"></i></button>
+                    <button onclick="sendWhatsApp(${c.id})" class="bg-green-600 text-white p-1 rounded mr-1" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>
+                    <button onclick="certificatSolde(${c.id})" class="bg-purple-500 text-white p-1 rounded mr-1" title="Certificat"><i class="fas fa-certificate"></i></button>
+                    <button onclick="payerDepuisClient(${c.id})" class="bg-green-500 text-white p-1 rounded" title="Payer"><i class="fas fa-credit-card"></i></button>
+                </td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+        console.log("✅ Affichage terminé,", clients.length, "clients");
+        
+    } catch (error) {
+        console.error("❌ Erreur chargerClients:", error);
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ Erreur: ${error.message}<\/td><\/tr>`;
+    }
+}    
+    function filtrerClients() {
+        const search = document.getElementById('searchClient').value.toLowerCase();
+        const rows = document.querySelectorAll('#listeClients tr');
+        for (const row of rows) {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(search) ? '' : 'none';
+        }
+    }
+    
+    function openAddClientModal() {
+        document.getElementById('modalAddClient').style.display = 'flex';
+    }
+    
+    async function ajouterClient() {
+        const nom = document.getElementById('newNom').value;
+        const telephone = document.getElementById('newTelephone').value;
+        const email = document.getElementById('newEmail').value;
+        const montant_total = parseFloat(document.getElementById('newMontant').value);
+        
+        if (!nom || !telephone || !montant_total) {
+            showToast("Remplissez tous les champs obligatoires", "error");
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/debiteurs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom, telephone, email, montant_total, solde_restant: montant_total })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast("✅ Client ajouté avec succès", "success");
+                closeModal('modalAddClient');
+                document.getElementById('newNom').value = '';
+                document.getElementById('newTelephone').value = '';
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newMontant').value = '';
+                chargerClients();
+                chargerDashboard();
+                chargerSelectClients();
+            } else {
+                showToast("❌ " + (result.error || "Erreur"), "error");
+            }
+        } catch (error) {
+            showToast("❌ " + error.message, "error");
+        }
+    }
+    
+    // ========== PAIEMENTS ==========
+let allClientsPaiement = [];
+
+async function chargerSelectClients() {
+    const response = await fetch('/api/debiteurs');
+    allClientsPaiement = await response.json();
+    
+    const selectClient = document.getElementById('paiementClient');
+    let options = '<option value="">-- Choisir un client --</option>';
+    for (const d of allClientsPaiement) {
+        options += `<option value="${d.id}" data-solde="${d.solde_restant}" data-nom="${d.nom}">
+            ${d.nom} - ${d.solde_restant.toLocaleString()} FCFA
+        </option>`;
+    }
+    selectClient.innerHTML = options;
+    document.getElementById('searchPaiementCount').innerHTML = `${allClientsPaiement.length} client(s)`;
+}
+
+function filtrerClientsPaiement() {
+    const searchTerm = document.getElementById('searchClientPaiement').value.toLowerCase();
+    const select = document.getElementById('paiementClient');
+    
+    let visibleCount = 0;
+    let options = '<option value="">-- Choisir un client --</option>';
+    
+    for (const c of allClientsPaiement) {
+        const nomMatch = c.nom.toLowerCase().includes(searchTerm);
+        const telMatch = c.telephone.toLowerCase().includes(searchTerm);
+        const emailMatch = c.email && c.email.toLowerCase().includes(searchTerm);
+        
+        if (searchTerm === "" || nomMatch || telMatch || emailMatch) {
+            options += `<option value="${c.id}" data-solde="${c.solde_restant}" data-nom="${c.nom}">
+                ${c.nom} - ${c.solde_restant.toLocaleString()} FCFA
+            </option>`;
+            visibleCount++;
+        }
+    }
+    
+    select.innerHTML = options;
+    document.getElementById('searchPaiementCount').innerHTML = `${visibleCount} client(s) trouvé(s)`;
+}
+
+async function chargerEcheancesClient() {
+    const select = document.getElementById('paiementClient');
+    const clientId = select.value;
+    const option = select.options[select.selectedIndex];
+    const solde = option.dataset.solde;
+    
+    console.log("Client sélectionné:", clientId, "Solde:", solde);
+    
+    if (!clientId) {
+        document.getElementById('echeancesClientList').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Sélectionnez un client<td></tr>';
+        document.getElementById('btnPayerTotal').classList.add('hidden');
+        document.getElementById('soldeActuel').value = '';
+        return;
+    }
+    
+    currentClientId = parseInt(clientId);
+    currentClientSolde = parseFloat(solde);
+    
+    document.getElementById('soldeActuel').value = currentClientSolde.toLocaleString() + ' FCFA';
+    
+    // Afficher le bouton payer total si solde > 0
+    if (currentClientSolde > 0) {
+        document.getElementById('btnPayerTotal').classList.remove('hidden');
+        document.getElementById('btnPayerTotal').innerHTML = `💰 PAYER LE SOLDE TOTAL (${currentClientSolde.toLocaleString()} FCFA)`;
+    } else {
+        document.getElementById('btnPayerTotal').classList.add('hidden');
+    }
+    
+    // Charger les échéances du client
+    try {
+        console.log("Chargement des échéances pour client:", clientId);
+        const response = await fetch(`/api/echeances/${clientId}`);
+        const echeances = await response.json();
+        
+        console.log("Échéances reçues:", echeances);
+        
+        const tbody = document.getElementById('echeancesClientList');
+        const aujourdhui = new Date();
+        aujourdhui.setHours(0, 0, 0, 0);
+        
+        if (!echeances || echeances.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Aucune échéance programmée pour ce client<\/td><\/tr>';
+            return;
+        }
+        
+        // Filtrer uniquement les échéances non payées
+        const echeancesNonPayees = echeances.filter(e => e.statut !== 'paye' && e.statut !== 'anticipe');
+        
+        if (echeancesNonPayees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-green-500">✅ Toutes les échéances sont payées<\/td><\/tr>';
+            return;
+        }
+        
+        let html = '';
+        for (const e of echeancesNonPayees) {
+            const dateEcheance = new Date(e.date);
+            dateEcheance.setHours(0, 0, 0, 0);
+            const diffJours = Math.floor((aujourdhui - dateEcheance) / (1000 * 60 * 60 * 24)) + 1;
+            
+            let penalite = 0;
+            if (diffJours > 14) {
+                penalite = e.montant * 0.01 * (diffJours - 14);
+            }
+            
+            const total = e.montant + penalite;
+            let statutText = '';
+            let statutClass = '';
+            
+            if (diffJours > 14) {
+                statutText = `⚠️ En retard (${diffJours}j)`;
+                statutClass = 'text-red-600';
+            } else if (diffJours > 0) {
+                statutText = `⚠️ Retard (${diffJours}j)`;
+                statutClass = 'text-orange-600';
+            } else if (diffJours === 0) {
+                statutText = `🔔 Aujourd'hui`;
+                statutClass = 'text-yellow-600';
+            } else {
+                statutText = `⏳ Dans ${-diffJours} jours`;
+                statutClass = 'text-green-600';
+            }
+            
+            html += `<tr class="border-b">
+                <td class="p-2 border">${dateEcheance.toLocaleDateString()}<\/td>
+                <td class="p-2 border text-right">${e.montant.toLocaleString()} FCFA<\/td>
+                <td class="p-2 border text-right text-red-600">${penalite > 0 ? penalite.toLocaleString() + ' FCFA' : '-'}<\/td>
+                <td class="p-2 border text-right font-bold">${total.toLocaleString()} FCFA<\/td>
+                <td class="p-2 border ${statutClass}">${statutText}<\/td>
+                <td class="p-2 border text-center">
+                    <button onclick="payerEcheanceClient(${e.id}, ${e.montant}, ${penalite})" 
+                        class="bg-green-500 text-white px-2 py-1 rounded text-xs">
+                        💰 Payer
+                    </button>
+                <\/td>
+            <\/tr>`;
+        }
+        
+        tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error("Erreur:", error);
+        document.getElementById('echeancesClientList').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500">❌ Erreur: ${error.message}<\/td><\/tr>`;
+    }
+}
+async function payerEcheanceClient(echeanceId, montant, penalite) {
+    const mode = document.getElementById('paiementMode').value;
+    const montantTotal = montant + penalite;
+    const commentaire = prompt("Commentaire (optionnel):", `Paiement échéance ${new Date().toLocaleDateString()}`);
+    
+    try {
+        const response = await fetch('/api/paiements/echeance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                echeanceId, 
+                clientId: currentClientId,
+                montant: montantTotal, 
+                mode, 
+                commentaire: commentaire || "",
+                penalite: penalite
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`✅ Paiement de ${montantTotal.toLocaleString()} FCFA effectué`, "success");
+            // Recharger les échéances
+            await chargerEcheancesClient();
+            await chargerSelectClients();
+            await chargerClients();
+            await chargerDashboard();
+            await chargerHistorique();
+        } else {
+            showToast("❌ " + result.error, "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    }
+}
+
+async function enregistrerPaiementPersonnalise() {
+    if (!currentClientId) {
+        showToast("Sélectionnez un client", "error");
+        return;
+    }
+    
+    const montant = parseFloat(document.getElementById('paiementMontant').value);
+    const mode = document.getElementById('paiementMode').value;
+    const commentaire = document.getElementById('paiementCommentaire').value;
+    
+    if (!montant || montant <= 0) {
+        showToast("Entrez un montant valide", "error");
+        return;
+    }
+    
+    if (montant > currentClientSolde) {
+        showToast(`Le montant (${montant.toLocaleString()} FCFA) dépasse le solde (${currentClientSolde.toLocaleString()} FCFA)`, "error");
+        return;
+    }
+    
+    showToast("💾 Traitement du paiement...", "info");
+    
+    try {
+        // Récupérer les échéances du client
+        const echeancesResp = await fetch(`/api/echeances/${currentClientId}`);
+        const echeances = await echeancesResp.json();
+        
+        // Filtrer les échéances non payées
+        let echeancesRestantes = echeances.filter(e => e.statut === 'en_attente' || e.statut === 'partiel');
+        
+        let resteAPayer = montant;
+        let paiementsEffectues = [];
+        
+        // Distribuer le paiement sur les échéances
+        for (let i = 0; i < echeancesRestantes.length && resteAPayer > 0; i++) {
+            const e = echeancesRestantes[i];
+            let montantDu = e.montant;
+            
+            // Vérifier si c'est une échéance partielle
+            if (e.statut === 'partiel') {
+                montantDu = e.montant_restant || e.montant;
+            }
+            
+            if (resteAPayer >= montantDu) {
+                // Paiement complet de l'échéance
+                resteAPayer -= montantDu;
+                paiementsEffectues.push({
+                    echeance_id: e.id,
+                    montant: montantDu,
+                    type: 'complet'
+                });
+            } else {
+                // Paiement partiel de l'échéance
+                paiementsEffectues.push({
+                    echeance_id: e.id,
+                    montant: resteAPayer,
+                    type: 'partiel',
+                    montant_restant: montantDu - resteAPayer
+                });
+                resteAPayer = 0;
+            }
+        }
+        
+        // Envoyer les paiements au serveur
+        const response = await fetch('/api/paiements/personnalise', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                client_id: currentClientId,
+                montant_total: montant,
+                mode: mode,
+                commentaire: commentaire,
+                paiements: paiementsEffectues
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`✅ Paiement de ${montant.toLocaleString()} FCFA effectué`, "success");
+            
+            // Réinitialiser le formulaire
+            document.getElementById('paiementMontant').value = '';
+            document.getElementById('paiementCommentaire').value = '';
+            
+            // Recharger les données
+            await chargerEcheancesClient();
+            await chargerSelectClients();
+            await chargerClients();
+            await chargerDashboard();
+            await chargerHistorique();
+            
+            // Afficher le nouveau solde
+            if (result.nouveau_solde !== undefined) {
+                currentClientSolde = result.nouveau_solde;
+                document.getElementById('soldeActuel').value = currentClientSolde.toLocaleString() + ' FCFA';
+            }
+            
+            // Message pour trop-perçu
+            if (result.trop_percu && result.trop_percu > 0) {
+                showToast(`⚠️ Trop-perçu de ${result.trop_percu.toLocaleString()} FCFA - Déduit de la prochaine échéance`, "info");
+            }
+            
+        } else {
+            showToast("❌ " + (result.error || "Erreur"), "error");
+        }
+        
+    } catch (error) {
+        console.error("Erreur:", error);
+        showToast("❌ " + error.message, "error");
+    }
+}
+async function payerTotalClient() {
+    if (!currentClientId || currentClientSolde <= 0) {
+        showToast("Aucun solde à payer", "error");
+        return;
+    }
+    
+    const mode = document.getElementById('paiementMode').value;
+    const confirmation = confirm(`Confirmer le paiement total de ${currentClientSolde.toLocaleString()} FCFA ?`);
+    
+    if (!confirmation) return;
+    
+    try {
+        const response = await fetch('/api/paiements/total', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                clientId: currentClientId, 
+                montant: currentClientSolde, 
+                mode: mode,
+                commentaire: "Paiement total du solde"
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`✅ Solde total payé !`, "success");
+            await chargerEcheancesClient();
+            await chargerSelectClients();
+            await chargerClients();
+            await chargerDashboard();
+            await chargerHistorique();
+        } else {
+            showToast("❌ " + result.error, "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    }
+}
+    
+// ========== VARIABLES GLOBALES POUR PROGRAMMATION ==========
+let allClientsList = [];
+let selectedClientForProg = null;
+let currentNbTranches = null;
+let currentPeriode = 'mensuel';
+
+// ========== CHARGER LES CLIENTS ==========
+async function chargerClientsProg() {
+    console.log("🔄 Chargement des clients pour programmation...");
+    
+    const select = document.getElementById('progClient');
+    if (!select) {
+        console.error("❌ Select progClient non trouvé");
+        return;
+    }
+    
+    select.innerHTML = '<option value="">-- Chargement des clients... --</option>';
+    
+    try {
+        const response = await fetch('/api/debiteurs');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        allClientsList = await response.json();
+        console.log("📊 Clients reçus:", allClientsList.length);
+        
+        // Filtrer uniquement les clients avec solde > 0
+        const clientsAvecSolde = allClientsList.filter(c => c.solde_restant > 0);
+        console.log("📊 Clients avec solde > 0:", clientsAvecSolde.length);
+        
+        let options = '<option value="">-- Choisir un client --</option>';
+        
+        for (const c of clientsAvecSolde) {
+            options += `<option value="${c.id}" 
+                data-solde="${c.solde_restant}" 
+                data-nom="${c.nom.replace(/"/g, '&quot;')}" 
+                data-tel="${c.telephone}"
+                data-email="${c.email || ''}">
+                ${c.nom} - ${c.solde_restant.toLocaleString()} FCFA
+            </option>`;
+        }
+        
+        select.innerHTML = options;
+        
+        const resultCount = document.getElementById('searchResultCount');
+        if (resultCount) {
+            if (clientsAvecSolde.length === 0) {
+                resultCount.innerHTML = '⚠️ Aucun client avec solde. Ajoutez d\'abord des clients.';
+                resultCount.className = 'text-xs text-orange-500 mt-1';
+            } else {
+                resultCount.innerHTML = `${clientsAvecSolde.length} client(s) avec solde > 0`;
+                resultCount.className = 'text-xs text-green-500 mt-1';
+            }
+        }
+        
+    } catch (error) {
+        console.error("❌ Erreur chargerClientsProg:", error);
+        select.innerHTML = '<option value="">-- Erreur de chargement --</option>';
+        const resultCount = document.getElementById('searchResultCount');
+        if (resultCount) {
+            resultCount.innerHTML = '❌ Erreur: ' + error.message;
+            resultCount.className = 'text-xs text-red-500 mt-1';
+        }
+    }
+}
+
+// ========== FILTRER LES CLIENTS ==========
+function filtrerClientsProg() {
+    const searchTerm = document.getElementById('searchClientProg').value.toLowerCase();
+    const select = document.getElementById('progClient');
+    
+    if (!allClientsList || allClientsList.length === 0) {
+        console.log("Liste des clients vide");
+        return;
+    }
+    
+    // Filtrer les clients avec solde > 0
+    const clientsAvecSolde = allClientsList.filter(c => c.solde_restant > 0);
+    
+    let visibleCount = 0;
+    let options = '<option value="">-- Choisir un client --</option>';
+    
+    for (const c of clientsAvecSolde) {
+        const nomMatch = c.nom.toLowerCase().includes(searchTerm);
+        const telMatch = c.telephone.toLowerCase().includes(searchTerm);
+        const emailMatch = c.email && c.email.toLowerCase().includes(searchTerm);
+        
+        if (searchTerm === "" || nomMatch || telMatch || emailMatch) {
+            options += `<option value="${c.id}" 
+                data-solde="${c.solde_restant}" 
+                data-nom="${c.nom.replace(/"/g, '&quot;')}" 
+                data-tel="${c.telephone}"
+                data-email="${c.email || ''}">
+                ${c.nom} - ${c.solde_restant.toLocaleString()} FCFA
+            </option>`;
+            visibleCount++;
+        }
+    }
+    
+    select.innerHTML = options;
+    document.getElementById('searchResultCount').innerHTML = `${visibleCount} client(s) trouvé(s)`;
+}
+
+// ========== MISE À JOUR DU CLIENT SÉLECTIONNÉ ==========
+function updateProgMontant() {
+    const select = document.getElementById('progClient');
+    const option = select.options[select.selectedIndex];
+    
+    if (select.value && select.value !== "") {
+        const solde = parseFloat(option.dataset.solde);
+        const nom = option.dataset.nom;
+        const tel = option.dataset.tel;
+        const email = option.dataset.email || '-';
+        
+        selectedClientForProg = {
+            id: parseInt(select.value),
+            nom: nom,
+            telephone: tel,
+            email: email,
+            solde: solde
+        };
+        
+        document.getElementById('clientNomProg').innerText = nom;
+        document.getElementById('clientTelProg').innerText = tel;
+        document.getElementById('clientSoldeProg').innerHTML = solde.toLocaleString() + ' FCFA';
+        
+        document.getElementById('clientInfoProg').classList.remove('hidden');
+        document.getElementById('configPanelProg').classList.remove('hidden');
+        
+        // Réinitialiser l'aperçu
+        document.getElementById('apercuProg').innerHTML = 'Sélectionnez le nombre de tranches pour voir l\'aperçu';
+        currentNbTranches = null;
+        
+        // Réinitialiser les boutons
+        document.querySelectorAll('.tranche-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-500', 'text-white');
+            btn.classList.add('bg-gray-200');
+        });
+        
+        // Mettre en évidence le bouton 3 par défaut
+        const btn3 = document.querySelector('.tranche-btn[onclick="setTranchesProg(3)"]');
+        if (btn3) {
+            btn3.classList.add('bg-indigo-500', 'text-white');
+            btn3.classList.remove('bg-gray-200');
+            currentNbTranches = 3;
+            currentPeriode = document.querySelector('input[name="periode"]:checked').value;
+            
+            // Afficher l'aperçu par défaut
+            const montantTranche = solde / 3;
+            const pourcentage = (montantTranche / solde * 100).toFixed(1);
+            document.getElementById('apercuProg').innerHTML = `<div class="bg-green-100 p-3 rounded">
+                <strong>3 tranches égales</strong><br>
+                Montant par tranche: <span class="font-bold">${montantTranche.toLocaleString()} FCFA</span><br>
+                Pourcentage: <span class="font-bold">${pourcentage}%</span> par paiement<br>
+                Total: ${solde.toLocaleString()} FCFA
+            </div>`;
+        }
+        
+    } else {
+        document.getElementById('clientInfoProg').classList.add('hidden');
+        document.getElementById('configPanelProg').classList.add('hidden');
+        selectedClientForProg = null;
+        currentNbTranches = null;
+    }
+}
+
+// ========== CHOISIR LE NOMBRE DE TRANCHES ==========
+function setTranchesProg(nbTranches) {
+    if (!selectedClientForProg) {
+        showToast("Sélectionnez d'abord un client", "error");
+        return;
+    }
+    
+    currentNbTranches = nbTranches;
+    currentPeriode = document.querySelector('input[name="periode"]:checked').value;
+    
+    const montant = selectedClientForProg.solde;
+    const montantTranche = montant / nbTranches;
+    const pourcentage = (montantTranche / montant * 100).toFixed(1);
+    
+    // Mettre à jour l'apparence des boutons
+    document.querySelectorAll('.tranche-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-500', 'text-white');
+        btn.classList.add('bg-gray-200');
+    });
+    
+    // Ajouter la classe active au bouton cliqué
+    const buttons = document.querySelectorAll('.tranche-btn');
+    for (let i = 0; i < buttons.length; i++) {
+        if (buttons[i].getAttribute('onclick') === `setTranchesProg(${nbTranches})`) {
+            buttons[i].classList.add('bg-indigo-500', 'text-white');
+            buttons[i].classList.remove('bg-gray-200');
+            break;
+        }
+    }
+    
+    let apercu = `<div class="bg-green-100 p-3 rounded">
+        <strong>${nbTranches} tranches égales</strong><br>
+        Montant par tranche: <span class="font-bold">${montantTranche.toLocaleString()} FCFA</span><br>
+        Pourcentage: <span class="font-bold">${pourcentage}%</span> par paiement<br>
+        Total: ${montant.toLocaleString()} FCFA
+    </div>`;
+    
+    document.getElementById('apercuProg').innerHTML = apercu;
+}
+
+// ========== GÉNÉRER ET ENREGISTRER ==========
+async function genererEtEnregistrerProgrammation() {
+    if (!selectedClientForProg) {
+        showToast("Sélectionnez d'abord un client", "error");
+        return;
+    }
+    
+    if (!currentNbTranches) {
+        showToast("Choisissez d'abord le nombre de tranches", "error");
+        return;
+    }
+    
+    const montant_total = selectedClientForProg.solde;
+    const nb_tranches = currentNbTranches;
+    const periode = currentPeriode;
+    const dateDebut = document.getElementById('dateDebut').value;
+    
+    showToast("📊 Calcul de l'échéancier...", "info");
+    
+    try {
+        const response = await fetch('/api/programmations/calculer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ montant_total, nb_tranches, periode })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Ajuster les dates si une date de début est spécifiée
+            let echeances = result.echeances;
+            if (dateDebut) {
+                const startDate = new Date(dateDebut);
+                echeances = [];
+                for (let i = 0; i < result.echeances.length; i++) {
+                    let date = new Date(startDate);
+                    if (periode === 'hebdomadaire') {
+                        date.setDate(date.getDate() + (i + 1) * 7);
+                    } else {
+                        date.setMonth(date.getMonth() + (i + 1));
+                    }
+                    echeances.push({
+                        ...result.echeances[i],
+                        date: date.toISOString()
+                    });
+                }
+            }
+            
+            // Afficher l'aperçu avec confirmation
+            let apercuHtml = `<div class="mt-4 bg-blue-50 p-4 rounded-lg">
+                <h3 class="font-bold mb-2">📅 Confirmation de l'échéancier</h3>
+                <div class="max-h-60 overflow-y-auto">`;
+            
+            for (let i = 0; i < echeances.length; i++) {
+                const e = echeances[i];
+                const dateStr = new Date(e.date).toLocaleDateString();
+                apercuHtml += `<div class="flex justify-between items-center p-2 border-b">
+                    <span class="font-medium">Tranche ${i+1}</span>
+                    <span>📅 ${dateStr}</span>
+                    <span class="font-bold text-green-600">${e.montant.toLocaleString()} FCFA</span>
+                    <span class="text-gray-500">(${e.pourcentage}%)</span>
+                </div>`;
+            }
+            
+            apercuHtml += `</div>
+                <div class="mt-3 flex gap-2">
+                    <button onclick="confirmerEnregistrement(${selectedClientForProg.id}, '${JSON.stringify(echeances).replace(/"/g, '&quot;')}')" 
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">✅ Confirmer l'enregistrement</button>
+                    <button onclick="annulerProgrammation()" 
+                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">❌ Annuler</button>
+                </div>
+            </div>`;
+            
+            document.getElementById('echeancierResultat').innerHTML = apercuHtml;
+            document.getElementById('echeancierResultat').classList.remove('hidden');
+        } else {
+            showToast("❌ " + (result.error || "Erreur de calcul"), "error");
+        }
+    } catch (error) {
+        console.error("Erreur:", error);
+        showToast("❌ Erreur: " + error.message, "error");
+    }
+}
+
+// ========== CONFIRMER L'ENREGISTREMENT ==========
+async function confirmerEnregistrement(debiteur_id, echeancesJson) {
+    const echeances = JSON.parse(echeancesJson);
+    
+    showToast("💾 Enregistrement des échéances en cours...", "info");
+    
+    try {
+        const response = await fetch('/api/echeances/enregistrer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                debiteur_id: parseInt(debiteur_id), 
+                echeances: echeances 
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`✅ ${result.message}`, "success");
+            document.getElementById('echeancierResultat').classList.add('hidden');
+            document.getElementById('echeancierResultat').innerHTML = '';
+            document.getElementById('progClient').value = '';
+            document.getElementById('searchClientProg').value = '';
+            document.getElementById('clientInfoProg').classList.add('hidden');
+            document.getElementById('configPanelProg').classList.add('hidden');
+            document.getElementById('dateDebut').value = '';
+            document.getElementById('apercuProg').innerHTML = 'Sélectionnez un client et le nombre de tranches pour voir l\'aperçu';
+            
+            // Réinitialiser les boutons
+            document.querySelectorAll('.tranche-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-500', 'text-white');
+                btn.classList.add('bg-gray-200');
+            });
+            
+            // Recharger les données
+            await chargerClientsProg();
+            await chargerSelectClients();
+            await chargerClients();
+            await chargerDashboard();
+            
+            selectedClientForProg = null;
+            currentNbTranches = null;
+            
+        } else {
+            showToast("❌ " + (result.error || "Erreur d'enregistrement"), "error");
+        }
+    } catch (error) {
+        console.error("Erreur:", error);
+        showToast("❌ Erreur: " + error.message, "error");
+    }
+}
+
+// ========== ANNULER ==========
+function annulerProgrammation() {
+    document.getElementById('echeancierResultat').classList.add('hidden');
+    document.getElementById('echeancierResultat').innerHTML = '';
+}
+   
+    // ========== HISTORIQUE ==========
+    async function chargerHistorique() {
+    const tbody = document.getElementById('historiqueList');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="loading"></div></td></tr>';
+    
+    try {
+        const response = await fetch('/api/historique');
+        const historique = await response.json();
+        
+        if (!historique || historique.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">📭 Aucun paiement</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        for (const h of historique) {
+            const date = h.date ? new Date(h.date).toLocaleDateString() : '-';
+            
+            // Déterminer le type
+            let typeText = '';
+            let typeClass = '';
+            
+            if (h.type === 'penalite') {
+                typeText = '⚠️ Pénalité';
+                typeClass = 'bg-red-100 text-red-700';
+            } else if (h.type === 'echeance') {
+                typeText = '💰 Échéance';
+                typeClass = 'bg-blue-100 text-blue-700';
+            } else if (h.type === 'anticipe') {
+                typeText = '🔄 Anticipé';
+                typeClass = 'bg-green-100 text-green-700';
+            } else {
+                typeText = h.type || 'echeance';
+                typeClass = 'bg-gray-100 text-gray-700';
+            }
+            
+            html += `<tr class="border-b">
+                <td class="p-2">${date}</td>
+                <td class="p-2 font-semibold">${h.client_nom}</td>
+                <td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${typeClass}">${typeText}</span></td>
+                <td class="p-2 text-right">${(h.montant || 0).toLocaleString()} FCFA</td>
+                <td class="p-2">${h.mode || '-'}</td>
+                <td class="p-2 text-gray-500">${h.commentaire || '-'}</td>
+            </td>`;
+        }
+        tbody.innerHTML = html;
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500">❌ Erreur: ${error.message}</td></tr>`;
+    }
+}    
+
+function filtrerHistorique() {
+    const searchTerm = document.getElementById('searchHistorique').value.toLowerCase();
+    const rows = document.querySelectorAll('#historiqueList tr');
+    
+    for (const row of rows) {
+        const text = row.innerText.toLowerCase();
+        if (searchTerm === "" || text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+}
+function exporterHistoriquePDF() {
+    const printWindow = window.open('', '_blank');
+    const content = document.getElementById('section-historique').cloneNode(true);
+    
+    // Supprimer les boutons dans la version imprimée
+    const buttons = content.querySelectorAll('button');
+    buttons.forEach(btn => btn.remove());
+    
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Historique des paiements - MARISYL</title>
+        <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+        <style>
+            body { padding: 30px; }
+            @media print {
+                button { display: none; }
+            }
+        </style>
+    </head>
+    <body>
+        ${content.innerHTML}
+        <p style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">
+            Document généré le ${new Date().toLocaleDateString()}
+        </p>
+        <script>window.print(); window.close();<\/script>
+    </body>
+    </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function imprimerHistorique() {
+    window.print();
+}
+
+
+    // ========== ALERTES ==========
+    async function chargerAlertes() {
+    try {
+        const response = await fetch('/api/alertes');
+        const alertes = await response.json();
+        
+        let html = '';
+        
+        // Alertes échéances aujourd'hui
+        if (alertes.aujourdhui && alertes.aujourdhui.length > 0) {
+            html += `<div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 mb-4">
+                <h3 class="font-bold text-yellow-700 mb-2">⚠️ Paiements à faire AUJOURD'HUI (${alertes.aujourdhui.length})</h3>`;
+            for (const a of alertes.aujourdhui) {
+                html += `<div class="flex justify-between items-center py-3 border-b border-yellow-100">
+                    <div>
+                        <span class="font-semibold">${a.client_nom}</span>
+                        <p class="text-sm text-gray-600">📅 Échéance aujourd'hui</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-red-600">${a.montant.toLocaleString()} FCFA</span>
+                        <div class="flex gap-2 mt-1">
+                            <button onclick="envoyerRappelWhatsAppClient(${a.debiteur_id})" 
+                                class="bg-green-500 text-white px-2 py-1 rounded text-xs">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button onclick="voirDetails(${a.debiteur_id})" 
+                                class="bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                                Voir
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+        
+        // Alertes clients en retard
+        if (alertes.retard && alertes.retard.length > 0) {
+            html += `<div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 mb-4">
+                <h3 class="font-bold text-red-700 mb-2">🚨 CLIENTS EN RETARD (${alertes.retard.length})</h3>`;
+            for (const a of alertes.retard) {
+                const penaliteText = a.penalite > 0 ? ` + pénalité: ${a.penalite.toLocaleString()} FCFA` : '';
+                html += `<div class="flex justify-between items-center py-3 border-b border-red-100">
+                    <div>
+                        <span class="font-semibold">${a.client_nom}</span>
+                        <p class="text-sm text-red-600">⏰ Retard de ${a.jours_retard + 1} jours${penaliteText}</p>
+                        <p class="text-xs text-gray-500">Échéance du ${new Date(a.date_echeance).toLocaleDateString()}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-red-600">${a.montant.toLocaleString()} FCFA</span>
+                        <div class="flex gap-2 mt-1">
+                            <button onclick="envoyerRappelWhatsAppClient(${a.debiteur_id})" 
+                                class="bg-green-500 text-white px-2 py-1 rounded text-xs">
+                                <i class="fab fa-whatsapp"></i> Rappel
+                            </button>
+                            <button onclick="payerEcheanceClient(${a.echeance_id}, ${a.montant}, ${a.penalite})" 
+                                class="bg-orange-500 text-white px-2 py-1 rounded text-xs">
+                                Payer
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+        
+        // Alertes échéances à venir (cette semaine)
+        if (alertes.cette_semaine && alertes.cette_semaine.length > 0) {
+            html += `<div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 mb-4">
+                <h3 class="font-bold text-blue-700 mb-2">📅 Échéances cette semaine (${alertes.cette_semaine.length})</h3>`;
+            for (const a of alertes.cette_semaine) {
+                html += `<div class="flex justify-between items-center py-3 border-b border-blue-100">
+                    <div>
+                        <span class="font-semibold">${a.client_nom}</span>
+                        <p class="text-sm text-blue-600">📅 Dans ${a.jours_restant} jours (${new Date(a.date_echeance).toLocaleDateString()})</p>
+                        <p class="text-xs text-gray-500">⚠️ Pénalité après 14 jours de retard</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold">${a.montant.toLocaleString()} FCFA</span>
+                        <div class="flex gap-2 mt-1">
+                            <button onclick="envoyerRappelWhatsAppClient(${a.debiteur_id})" 
+                                class="bg-green-500 text-white px-2 py-1 rounded text-xs">
+                                <i class="fab fa-whatsapp"></i> Rappel
+                            </button>
+                            <button onclick="voirDetails(${a.debiteur_id})" 
+                                class="bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                                Voir
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+        
+        if (!html) {
+            html = `<div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                <p>✅ Aucune alerte - Tout est à jour !</p>
+            </div>`;
+        }
+        
+        document.getElementById('alertesCompletes').innerHTML = html;
+        
+        // Mini alertes pour le dashboard
+        const alertesList = document.getElementById('alertesList');
+        if (alertes.retard && alertes.retard.length > 0) {
+            let alertHtml = '';
+            for (const a of alertes.retard.slice(0, 3)) {
+                alertHtml += `<div class="bg-red-50 p-2 rounded flex justify-between items-center">
+                    <div>
+                        <span>⚠️ ${a.client_nom}</span>
+                        <p class="text-xs text-red-600">Retard ${a.jours_retard}j</p>
+                    </div>
+                    <span class="font-bold text-red-600">${a.montant.toLocaleString()} FCFA</span>
+                </div>`;
+            }
+            alertesList.innerHTML = alertHtml;
+        } else if (alertes.aujourdhui && alertes.aujourdhui.length > 0) {
+            let alertHtml = '';
+            for (const a of alertes.aujourdhui.slice(0, 3)) {
+                alertHtml += `<div class="bg-yellow-50 p-2 rounded flex justify-between items-center">
+                    <div>
+                        <span>📅 ${a.client_nom}</span>
+                        <p class="text-xs text-yellow-600">Aujourd'hui</p>
+                    </div>
+                    <span class="font-bold">${a.montant.toLocaleString()} FCFA</span>
+                </div>`;
+            }
+            alertesList.innerHTML = alertHtml;
+        } else {
+            alertesList.innerHTML = '<div class="text-center text-gray-500">Aucune alerte</div>';
+        }
+        
+    } catch (error) {
+        console.error('Erreur alertes:', error);
+        document.getElementById('alertesCompletes').innerHTML = `
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <p>⚠️ Service d'alertes temporairement indisponible</p>
+            </div>`;
+    }
+}
+
+async function envoyerRappelWhatsAppClient(debiteur_id) {
+    try {
+        // D'abord récupérer les infos du client et son échéance
+        const response = await fetch(`/api/whatsapp/rappel/${debiteur_id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            window.open(result.url, '_blank');
+            showToast("📱 Message WhatsApp prêt à être envoyé !", "success");
+        } else {
+            showToast("❌ " + result.error, "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    }
+}
+
+     // ========== ADMINISTRATION ==========
+function afficherMessageAdmin(message, type) {
+    var div = document.getElementById('adminMessage');
+    div.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + ' mr-2"></i>' + message;
+    div.className = 'rounded-lg p-3 mb-4 text-sm ' + (type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
+    div.classList.remove('hidden');
+    setTimeout(function() { div.classList.add('hidden'); }, 4000);
+}
+
+async function changerMotDePasse() {
+    var ancien = document.getElementById('adminOldPassword').value;
+    var nouveau = document.getElementById('adminNewPassword').value;
+    var confirmation = document.getElementById('adminConfirmPassword').value;
+    
+    if (!ancien || !nouveau || !confirmation) {
+        afficherMessageAdmin("Tous les champs sont requis", "error");
+        return;
+    }
+    
+    if (nouveau !== confirmation) {
+        afficherMessageAdmin("Les mots de passe ne correspondent pas", "error");
+        return;
+    }
+    
+    if (nouveau.length < 8) {
+        afficherMessageAdmin("8 caractères minimum", "error");
+        return;
+    }
+    
+    if (!/[A-Z]/.test(nouveau)) {
+        afficherMessageAdmin("1 lettre majuscule requise", "error");
+        return;
+    }
+    
+    if (!/[0-9]/.test(nouveau)) {
+        afficherMessageAdmin("1 chiffre requis", "error");
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/changer-mot-de-passe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ancien: ancien, nouveau: nouveau })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            afficherMessageAdmin(result.message, "success");
+            document.getElementById('adminOldPassword').value = '';
+            document.getElementById('adminNewPassword').value = '';
+            document.getElementById('adminConfirmPassword').value = '';
+        } else {
+            afficherMessageAdmin(result.message, "error");
+        }
+    } catch (error) {
+        afficherMessageAdmin("Erreur: " + error.message, "error");
+    }
+}
+
+async function sauvegarderQuestionSecrete() {
+    var question = document.getElementById('adminQuestion').value;
+    var reponse = document.getElementById('adminReponse').value;
+    
+    if (!question || !reponse) {
+        afficherMessageAdmin("Veuillez remplir la question et la réponse", "error");
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/question-secrete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: question, reponse: reponse })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            afficherMessageAdmin(result.message, "success");
+        } else {
+            afficherMessageAdmin(result.message, "error");
+        }
+    } catch (error) {
+        afficherMessageAdmin("Erreur: " + error.message, "error");
+    }
+}
+
+async function sauvegarderEmailSecours() {
+    var email = document.getElementById('adminEmail').value;
+    
+    if (!email) {
+        afficherMessageAdmin("Veuillez entrer un email", "error");
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        afficherMessageAdmin("Email invalide", "error");
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/email-secours', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            afficherMessageAdmin(result.message, "success");
+        } else {
+            afficherMessageAdmin(result.message, "error");
+        }
+    } catch (error) {
+        afficherMessageAdmin("Erreur: " + error.message, "error");
+    }
+}
+
+async function chargerConfigAdmin() {
+    try {
+        const response = await fetch('/api/admin/config');
+        const config = await response.json();
+        
+        if (config.question) document.getElementById('adminQuestion').value = config.question;
+        if (config.reponse) document.getElementById('adminReponse').value = config.reponse;
+        if (config.email) document.getElementById('adminEmail').value = config.email;
+    } catch (error) {
+        console.error("Erreur chargement config:", error);
+    }
+}
+    
+    // ========== WHATSAPP ==========
+    async function sendWhatsApp(debiteur_id) {
+    try {
+        const response = await fetch(`/api/whatsapp/${debiteur_id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            window.open(result.url, '_blank');
+            
+            if (result.type === 'remerciement') {
+                showToast("🎉 Message de remerciement envoyé !", "success");
+            } else {
+                showToast("📱 Rappel WhatsApp ouvert !", "success");
+            }
+        } else {
+            showToast("❌ " + result.error, "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    }
+}    
+    // ========== PDF ==========
+    function exportClientsPDF() {
+        window.open('/api/pdf/clients', '_blank');
+    }
+    
+    function voirContrat(debiteur_id) {
+        window.open(`/api/pdf/contrat/${debiteur_id}`, '_blank');
+    }
+    
+    function certificatSolde(debiteur_id) {
+        window.open(`/api/pdf/certificat/${debiteur_id}`, '_blank');
+    }
+    
+    // ========== MODAL ==========
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>

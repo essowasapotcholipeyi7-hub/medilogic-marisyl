@@ -25,7 +25,11 @@ def login():
     data = request.json
     password = data.get('password', '')
     
-    if password == 'admin123':
+    # Lire le mot de passe depuis Google Sheets
+    config = sheets.get_config()
+    mot_de_passe_stocke = config.get('mot_de_passe', 'admin123')
+    
+    if password == mot_de_passe_stocke:
         session['logged_in'] = True
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Mot de passe incorrect'})
@@ -562,12 +566,27 @@ def admin_changer_mot_de_passe():
     nouveau = data.get('nouveau')
     
     # Vérifier l'ancien mot de passe
-    if ancien != 'admin123':
+    config = sheets.get_config()
+    mot_de_passe_actuel = config.get('mot_de_passe', 'admin123')
+    
+    if ancien != mot_de_passe_actuel:
         return jsonify({'success': False, 'message': 'Ancien mot de passe incorrect'})
     
-    # Ici, vous devriez sauvegarder dans Google Sheets
-    # Pour l'instant, simulation
-    return jsonify({'success': True, 'message': 'Mot de passe changé avec succès'})
+    if len(nouveau) < 8:
+        return jsonify({'success': False, 'message': '8 caractères minimum'})
+    
+    if not any(c.isupper() for c in nouveau):
+        return jsonify({'success': False, 'message': '1 lettre majuscule requise'})
+    
+    if not any(c.isdigit() for c in nouveau):
+        return jsonify({'success': False, 'message': '1 chiffre requis'})
+    
+    # Sauvegarder le nouveau mot de passe
+    result = sheets.update_mot_de_passe(nouveau)
+    
+    if result:
+        return jsonify({'success': True, 'message': 'Mot de passe changé avec succès'})
+    return jsonify({'success': False, 'message': 'Erreur lors de la sauvegarde'})
 
 @app.route('/api/admin/question-secrete', methods=['POST'])
 def admin_question_secrete():

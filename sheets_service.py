@@ -431,3 +431,32 @@ class SheetsService:
         except Exception as e:
             print(f"Erreur update_echeance_montant: {e}")
             return False
+
+    def get_config(self):
+        if not self.client:
+            return {'mot_de_passe': 'admin123'}
+        try:
+            ws = self.sheet.worksheet("Config")
+            data = ws.get_all_values()
+            config = {}
+            for row in data:
+                if len(row) >= 2:
+                    config[row[0]] = row[1]
+            return config
+        except:
+            return {'mot_de_passe': 'admin123'}
+
+    def update_mot_de_passe(self, nouveau_mot_de_passe):
+        if not self.client:
+            return False
+        try:
+            ws = self.sheet.worksheet("Config")
+            data = ws.get_all_values()
+            for i, row in enumerate(data):
+                if len(row) > 0 and row[0] == 'mot_de_passe':
+                    ws.update_cell(i + 1, 2, nouveau_mot_de_passe)
+                    return True
+            ws.append_row(['mot_de_passe', nouveau_mot_de_passe])
+            return True
+        except:
+            return False

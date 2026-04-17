@@ -319,7 +319,7 @@ class SheetsService:
                                 'id': int(float(row[0])) if row[0] else i,
                                 'date': row[2] if len(row) > 2 else '',
                                 'montant': float(row[3]) if len(row) > 3 and row[3] else 0,
-                                'pourcentage': float(row[4]) if len(row) > 4 and row[4] else 0,
+                                'pourcentage': float(row[4].replace(',', '.')) if len(row) > 4 and row[4] else 0,
                                 'statut': row[5] if len(row) > 5 else 'en_attente'
                             })
                             print(f"   ✅ Échéance trouvée: {row[2]} - {row[3]} FCFA")
@@ -353,7 +353,7 @@ class SheetsService:
                     debiteur_id,
                     e['date'],
                     e['montant'],
-                    e['pourcentage'],
+                    str(e['pourcentage']).replace(',', '.'),
                     'en_attente',
                     datetime.now().isoformat()
                 ])

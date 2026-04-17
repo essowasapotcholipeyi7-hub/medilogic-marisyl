@@ -352,11 +352,29 @@ def enregistrer_echeances():
         if not debiteur_id or not echeances:
             return jsonify({'success': False, 'error': 'Données incomplètes'})
         
+        # ✅ Vérifier que le total des échéances ne dépasse pas le solde
+        debiteurs = sheets.get_debiteurs()
+        client = next((d for d in debiteurs if d['id'] == debiteur_id), None)
+        
+        if not client:
+            return jsonify({'success': False, 'error': 'Client non trouvé'})
+        
+        total_echeances = sum(e['montant'] for e in echeances)
+        
+        # Récupérer les échéances existantes
+        echeances_existantes = sheets.get_echeances_by_debiteur(debiteur_id)
+        total_existant = sum(e['montant'] for e in echeances_existantes if e['statut'] == 'en_attente')
+        
+        if total_existant + total_echeances > client['solde_restant']:
+            return jsonify({
+                'success': False, 
+                'error': f'Le total des échéances ({total_existant + total_echeances:,.0f} FCFA) dépasse le solde du client ({client["solde_restant"]:,.0f} FCFA)'
+            })
+        
         result = sheets.save_echeances(debiteur_id, echeances)
         return jsonify(result)
         
     except Exception as e:
-        print(f"❌ Erreur: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # ========== API PROGRAMMATION ==========
@@ -464,7 +482,6 @@ def get_whatsapp_rappel(debiteur_id):
     if not debiteur or not debiteur.get('telephone'):
         return jsonify({'success': False, 'error': 'Numéro non disponible'})
     
-    # Récupérer la prochaine échéance
     echeances = sheets.get_echeances_by_debiteur(debiteur_id)
     prochaine_echeance = next((e for e in echeances if e['statut'] == 'en_attente'), None)
     
@@ -475,17 +492,24 @@ def get_whatsapp_rappel(debiteur_id):
     if prochaine_echeance:
         date_echeance = datetime.fromisoformat(prochaine_echeance['date'])
         aujourdhui = datetime.now()
-        jours_restant = (date_echeance - aujourdhui).days
+        
+        # 🔴 LIGNE CORRIGÉE ICI 🔴
+        # Avant : jours_restant = (date_echeance - aujourdhui).days
+        # Après : 
+        aujourdhui_date = aujourdhui.date()
+        date_echeance_date = date_echeance.date()
+        jours_restant = (date_echeance_date - aujourdhui_date).days
+        # 🔴 FIN DE LA CORRECTION 🔴
+        
         montant = prochaine_echeance['montant']
         
         if jours_restant < 0:
-            # Déjà en retard
             jours_retard = abs(jours_restant)
             if jours_retard > 14:
                 penalite = montant * 0.01 * (jours_retard - 14)
                 message = f"""🚨 URGENT - RETARD DE PAIEMENT 🚨
 
-Bonjour {debiteur['nom']},
+  Bonjour {debiteur['nom']},
 
 ⚠️ Votre paiement est en retard de {jours_retard} jours !
 
@@ -502,7 +526,7 @@ L'équipe MARISYL"""
             else:
                 message = f"""🔔 RAPPEL DE PAIEMENT - RETARD
 
-Bonjour {debiteur['nom']},
+   Bonjour {debiteur['nom']},
 
 ⚠️ Votre paiement est en retard de {jours_retard} jours.
 
@@ -517,7 +541,7 @@ L'équipe MARISYL"""
         elif jours_restant == 0:
             message = f"""⚠️ RAPPEL - PAIEMENT AUJOURD'HUI ⚠️
 
-Bonjour {debiteur['nom']},
+  Bonjour {debiteur['nom']},
 
 📅 Votre échéance arrive à échéance AUJOURD'HUI !
 
@@ -530,7 +554,7 @@ L'équipe MARISYL"""
         else:
             message = f"""🔔 RAPPEL DE PAIEMENT
 
-Bonjour {debiteur['nom']},
+  Bonjour {debiteur['nom']},
 
 📅 Votre prochaine échéance est dans {jours_restant} jours.
 
@@ -543,10 +567,9 @@ Merci de votre ponctualité.
 Cordialement,
 L'équipe MARISYL"""
     else:
-        # Pas d'échéance programmée, rappel du solde
         message = f"""🔔 RAPPEL DE SOLDE
 
-Bonjour {debiteur['nom']},
+  Bonjour {debiteur['nom']},
 
 💰 Votre solde restant est de {debiteur['solde_restant']:,.0f} FCFA.
 

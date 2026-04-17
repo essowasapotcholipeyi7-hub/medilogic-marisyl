@@ -112,9 +112,9 @@ class SheetsService:
                         'nom': row[1] if len(row) > 1 and row[1] else 'Sans nom',
                         'telephone': row[2] if len(row) > 2 else '',
                         'email': row[3] if len(row) > 3 else '',
-                        'montant_total': float(row[4]) if len(row) > 4 and row[4] else 0,
-                        'solde_restant': float(row[5]) if len(row) > 5 and row[5] else 0,
-                        'acompte': float(row[6]) if len(row) > 6 and row[6] else 0,
+                        'montant_total': self.clean_number(row[4]),
+                        'solde_restant': self.clean_number(row[5]),
+                        'acompte': self.clean_number(row[6]),
                         'datecreation': row[7] if len(row) > 7 else '',
                         'notes': row[8] if len(row) > 8 else ''
                     })
@@ -256,7 +256,7 @@ class SheetsService:
                     historique.append({
                         'date': row[3] if len(row) > 3 else '',
                         'client_nom': debiteurs.get(int(float(row[1])), 'Inconnu') if len(row) > 1 and row[1] else 'Inconnu',
-                        'montant': float(row[5]) if len(row) > 5 and row[5] else 0,
+                        'montant': self.clean_number(row[5]),
                         'mode': row[6] if len(row) > 6 else '-',
                         'commentaire': row[7] if len(row) > 7 else '-',
                         'type': row[4] if len(row) > 4 else 'echeance'
@@ -289,7 +289,7 @@ class SheetsService:
                         'id': int(row[0]) if row[0].isdigit() else i,
                         'debiteur_id': int(row[1]) if len(row) > 1 and row[1] and row[1].isdigit() else 0,
                         'date': row[2] if len(row) > 2 else '',
-                        'montant': float(row[3]) if len(row) > 3 and row[3] else 0,
+                        'montant': self.clean_number(row[3]),
                         'statut': row[5] if len(row) > 5 else 'en_attente'
                     })
             return echeances
@@ -318,8 +318,8 @@ class SheetsService:
                             echeances.append({
                                 'id': int(float(row[0])) if row[0] else i,
                                 'date': row[2] if len(row) > 2 else '',
-                                'montant': float(row[3]) if len(row) > 3 and row[3] else 0,
-                                'pourcentage': float(row[4].replace(',', '.')) if len(row) > 4 and row[4] else 0,
+                                'montant': self.clean_number(row[3]),
+                                'pourcentage': self.clean_number(row[4]),
                                 'statut': row[5] if len(row) > 5 else 'en_attente'
                             })
                             print(f"   ✅ Échéance trouvée: {row[2]} - {row[3]} FCFA")
@@ -460,3 +460,9 @@ class SheetsService:
             return True
         except:
             return False
+    def clean_number(self, value):
+        if not value:
+            return 0
+        if isinstance(value, (int, float)):
+            return float(value)
+        return float(str(value).replace(',', '.'))

@@ -73,49 +73,50 @@
             <button onclick="showSection('programmation')" class="tab-btn" id="tab-programmation"><i class="fas fa-calendar mr-1"></i> Programmation</button>
             <button onclick="showSection('historique')" class="tab-btn" id="tab-historique"><i class="fas fa-history mr-1"></i> Historique</button>
             <button onclick="showSection('alertes')" class="tab-btn" id="tab-alertes"><i class="fas fa-bell mr-1"></i> Alertes</button>
-            <button onclick="showSection('admin')" class="tab-btn" id="tab-admin"><i class="fas fa-user-shield mr-1"></i> Administration</button>
+            <!--<button onclick="showSection('admin')" class="tab-btn" id="tab-admin"><i class="fas fa-user-shield mr-1"></i> Administration</button>-->
         </div>
 
         <!-- DASHBOARD -->
-        <div id="section-dashboard" class="section">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-indigo-500">
-                    <div class="text-gray-500 text-sm">Total clients</div>
-                    <div class="text-3xl font-bold" id="statTotalClients">0</div>
-                </div>
-                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-red-500">
-                    <div class="text-gray-500 text-sm">Total dettes</div>
-                    <div class="text-3xl font-bold" id="statTotalDette">0 FCFA</div>
-                </div>
-                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-orange-500">
-                    <div class="text-gray-500 text-sm">En retard</div>
-                    <div class="text-3xl font-bold" id="statEnRetard">0</div>
-                </div>
-                <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-green-500">
-                    <div class="text-gray-500 text-sm">Clôturés</div>
-                    <div class="text-3xl font-bold" id="statClotures">0</div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-lg font-bold mb-4">📋 Derniers clients</h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr><th class="p-3">Nom</th><th class="p-3">Téléphone</th><th class="p-3">Total</th><th class="p-3">Solde</th><th class="p-3">Progression</th></tr>
-                            </thead>
-                            <tbody id="derniersClients"></tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-lg font-bold mb-4">⚠️ Alertes récentes</h2>
-                    <div id="alertesList" class="space-y-2"></div>
-                </div>
-            </div>
+<div id="section-dashboard" class="section">
+    <!-- Cartes statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-indigo-500">
+            <div class="text-gray-500 text-sm">Total clients</div>
+            <div class="text-3xl font-bold" id="statTotalClients">0</div>
         </div>
+        <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-red-500">
+            <div class="text-gray-500 text-sm">Total dettes</div>
+            <div class="text-3xl font-bold" id="statTotalDette">0 FCFA</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-orange-500">
+            <div class="text-gray-500 text-sm">En retard</div>
+            <div class="text-3xl font-bold" id="statEnRetard">0</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 shadow-md border-l-4 border-green-500">
+            <div class="text-gray-500 text-sm">Clôturés</div>
+            <div class="text-3xl font-bold" id="statClotures">0</div>
+        </div>
+    </div>
+    
+    <!-- Alertes récentes (en haut) -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-lg font-bold mb-4">⚠️ Alertes récentes</h2>
+        <div id="alertesList" class="space-y-2"></div>
+    </div>
+    
+    <!-- Derniers clients (en dessous) -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4">📋 Derniers clients</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr><th class="p-3">Nom</th><th class="p-3">Téléphone</th><th class="p-3">Total</th><th class="p-3">Solde</th><th class="p-3">Progression</th></tr>
+                </thead>
+                <tbody id="derniersClients"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
         <!-- VENTE DIRECTE (acompte 60%) -->
         <div id="section-vente" class="section" style="display:none">
@@ -831,7 +832,7 @@ async function chargerEcheancesClient() {
     console.log("Client sélectionné:", clientId, "Solde:", solde);
     
     if (!clientId) {
-        document.getElementById('echeancesClientList').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Sélectionnez un client<td></tr>';
+        document.getElementById('echeancesClientList').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Sélectionnez un client</td></tr>';
         document.getElementById('btnPayerTotal').classList.add('hidden');
         document.getElementById('soldeActuel').value = '';
         return;
@@ -842,7 +843,6 @@ async function chargerEcheancesClient() {
     
     document.getElementById('soldeActuel').value = currentClientSolde.toLocaleString() + ' FCFA';
     
-    // Afficher le bouton payer total si solde > 0
     if (currentClientSolde > 0) {
         document.getElementById('btnPayerTotal').classList.remove('hidden');
         document.getElementById('btnPayerTotal').innerHTML = `💰 PAYER LE SOLDE TOTAL (${currentClientSolde.toLocaleString()} FCFA)`;
@@ -850,7 +850,6 @@ async function chargerEcheancesClient() {
         document.getElementById('btnPayerTotal').classList.add('hidden');
     }
     
-    // Charger les échéances du client
     try {
         console.log("Chargement des échéances pour client:", clientId);
         const response = await fetch(`/api/echeances/${clientId}`);
@@ -867,7 +866,6 @@ async function chargerEcheancesClient() {
             return;
         }
         
-        // Filtrer uniquement les échéances non payées
         const echeancesNonPayees = echeances.filter(e => e.statut !== 'paye' && e.statut !== 'anticipe');
         
         if (echeancesNonPayees.length === 0) {
@@ -879,30 +877,32 @@ async function chargerEcheancesClient() {
         for (const e of echeancesNonPayees) {
             const dateEcheance = new Date(e.date);
             dateEcheance.setHours(0, 0, 0, 0);
-            const diffJours = Math.floor((aujourdhui - dateEcheance) / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Calcul des jours (positif = futur, négatif = passé)
+            const joursRestants = Math.ceil((dateEcheance - aujourdhui) / (1000 * 60 * 60 * 24));
             
             let penalite = 0;
-            if (diffJours > 14) {
-                penalite = e.montant * 0.01 * (diffJours - 14);
-            }
-            
-            const total = e.montant + penalite;
             let statutText = '';
             let statutClass = '';
             
-            if (diffJours > 14) {
-                statutText = `⚠️ En retard (${diffJours}j)`;
+            if (joursRestants < 0) {
+                // EN RETARD (date déjà passée)
+                const joursRetard = Math.abs(joursRestants);
+                if (joursRetard > 14) {
+                    penalite = e.montant * 0.01 * (joursRetard - 14);
+                }
+                statutText = `⚠️ En retard (${joursRetard}j)`;
                 statutClass = 'text-red-600';
-            } else if (diffJours > 0) {
-                statutText = `⚠️ Retard (${diffJours}j)`;
-                statutClass = 'text-orange-600';
-            } else if (diffJours === 0) {
+            } else if (joursRestants === 0) {
                 statutText = `🔔 Aujourd'hui`;
                 statutClass = 'text-yellow-600';
             } else {
-                statutText = `⏳ Dans ${-diffJours} jours`;
+                // DANS LE FUTUR
+                statutText = `⏳ Dans ${joursRestants} jours`;
                 statutClass = 'text-green-600';
             }
+            
+            const total = e.montant + penalite;
             
             html += `<tr class="border-b">
                 <td class="p-2 border">${dateEcheance.toLocaleDateString()}<\/td>
@@ -914,7 +914,7 @@ async function chargerEcheancesClient() {
                     <button onclick="payerEcheanceClient(${e.id}, ${e.montant}, ${penalite})" 
                         class="bg-green-500 text-white px-2 py-1 rounded text-xs">
                         💰 Payer
-                    </button>
+                    <\/button>
                 <\/td>
             <\/tr>`;
         }
@@ -926,21 +926,39 @@ async function chargerEcheancesClient() {
         document.getElementById('echeancesClientList').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500">❌ Erreur: ${error.message}<\/td><\/tr>`;
     }
 }
+
 async function payerEcheanceClient(echeanceId, montant, penalite) {
+    // Convertir en nombres
+    montant = parseFloat(montant);
+    penalite = parseFloat(penalite) || 0;
     const mode = document.getElementById('paiementMode').value;
     const montantTotal = montant + penalite;
-    const commentaire = prompt("Commentaire (optionnel):", `Paiement échéance ${new Date().toLocaleDateString()}`);
+    
+    // Récupérer le nom du client depuis le select
+    const select = document.getElementById('paiementClient');
+    const option = select.options[select.selectedIndex];
+    const clientNom = option ? option.dataset.nom : 'le client';
+    
+    // Demander confirmation
+    const confirmation = confirm(`💰 CONFIRMATION DE PAIEMENT\n\nClient : ${clientNom}\nMontant : ${montantTotal.toLocaleString()} FCFA\nMode : ${mode}\n\nConfirmez-vous ce paiement ?`);
+    
+    if (!confirmation) {
+        showToast("Paiement annulé", "info");
+        return;
+    }
+    
+    showToast("💳 Traitement en cours...", "info");
     
     try {
         const response = await fetch('/api/paiements/echeance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                echeanceId, 
+                echeanceId: echeanceId, 
                 clientId: currentClientId,
                 montant: montantTotal, 
-                mode, 
-                commentaire: commentaire || "",
+                mode: mode, 
+                commentaire: `Paiement échéance - ${new Date().toLocaleDateString()}`,
                 penalite: penalite
             })
         });
@@ -949,20 +967,19 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         
         if (result.success) {
             showToast(`✅ Paiement de ${montantTotal.toLocaleString()} FCFA effectué`, "success");
-            // Recharger les échéances
             await chargerEcheancesClient();
             await chargerSelectClients();
             await chargerClients();
             await chargerDashboard();
             await chargerHistorique();
+            await chargerAlertes();
         } else {
-            showToast("❌ " + result.error, "error");
+            showToast("❌ " + (result.error || "Erreur"), "error");
         }
     } catch (error) {
         showToast("❌ " + error.message, "error");
     }
 }
-
 async function enregistrerPaiementPersonnalise() {
     if (!currentClientId) {
         showToast("Sélectionnez un client", "error");
@@ -1352,6 +1369,14 @@ async function genererEtEnregistrerProgrammation() {
         const result = await response.json();
         
         if (result.success) {
+            // ✅ VÉRIFICATION : Le total des échéances ne doit pas dépasser le solde
+            const totalEcheances = result.echeances.reduce((sum, e) => sum + e.montant, 0);
+            
+            if (totalEcheances > montant_total) {
+                showToast(`⚠️ Le total des échéances (${totalEcheances.toLocaleString()} FCFA) dépasse le solde (${montant_total.toLocaleString()} FCFA)`, "error");
+                return;
+            }
+            
             // Ajuster les dates si une date de début est spécifiée
             let echeances = result.echeances;
             if (dateDebut) {
@@ -1387,8 +1412,11 @@ async function genererEtEnregistrerProgrammation() {
                 </div>`;
             }
             
-            apercuHtml += `</div>
-                <div class="mt-3 flex gap-2">
+            apercuHtml += `<div class="mt-3 p-2 bg-yellow-50 rounded text-sm">
+                ⚠️ Total à programmer: <strong>${totalEcheances.toLocaleString()} FCFA</strong>
+            </div>`;
+            
+            apercuHtml += `<div class="mt-3 flex gap-2">
                     <button onclick="confirmerEnregistrement(${selectedClientForProg.id}, '${JSON.stringify(echeances).replace(/"/g, '&quot;')}')" 
                         class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">✅ Confirmer l'enregistrement</button>
                     <button onclick="annulerProgrammation()" 
@@ -1626,7 +1654,7 @@ function imprimerHistorique() {
                                 class="bg-green-500 text-white px-2 py-1 rounded text-xs">
                                 <i class="fab fa-whatsapp"></i> Rappel
                             </button>
-                            <button onclick="payerEcheanceClient(${a.echeance_id}, ${a.montant}, ${a.penalite})" 
+                            <button onclick="payerEcheanceClient(${a.echeance_id}, ${parseFloat(String(a.montant).replace(',', '.'))}, ${parseFloat(String(a.penalite).replace(',', '.'))})"
                                 class="bg-orange-500 text-white px-2 py-1 rounded text-xs">
                                 Payer
                             </button>
@@ -1682,7 +1710,7 @@ function imprimerHistorique() {
                 alertHtml += `<div class="bg-red-50 p-2 rounded flex justify-between items-center">
                     <div>
                         <span>⚠️ ${a.client_nom}</span>
-                        <p class="text-xs text-red-600">Retard ${a.jours_retard}j</p>
+                        <p class="text-xs text-red-600">Retard ${a.jours_retard + 1 }j</p>
                     </div>
                     <span class="font-bold text-red-600">${a.montant.toLocaleString()} FCFA</span>
                 </div>`;

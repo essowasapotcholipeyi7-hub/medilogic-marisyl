@@ -934,10 +934,33 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
     const mode = document.getElementById('paiementMode').value;
     const montantTotal = montant + penalite;
     
-    // Récupérer le nom du client depuis le select
-    const select = document.getElementById('paiementClient');
-    const option = select.options[select.selectedIndex];
-    const clientNom = option ? option.dataset.nom : 'le client';
+    // ✅ Récupérer le client_id depuis l'API
+    let clientId = currentClientId;
+    
+    if (!clientId) {
+        try {
+            const response = await fetch(`/api/echeances/${echeanceId}/client`);
+            const data = await response.json();
+            clientId = data.client_id;
+            if (!clientId) {
+                showToast("❌ Client non trouvé", "error");
+                return;
+            }
+        } catch (error) {
+            showToast("❌ Erreur: " + error.message, "error");
+            return;
+        }
+    }
+    
+    // Récupérer le nom du client
+    let clientNom = 'le client';
+    try {
+        const response = await fetch(`/api/debiteurs/${clientId}`);
+        const client = await response.json();
+        clientNom = client.nom;
+    } catch (error) {
+        console.error("Erreur récupération nom:", error);
+    }
     
     // Demander confirmation
     const confirmation = confirm(`💰 CONFIRMATION DE PAIEMENT\n\nClient : ${clientNom}\nMontant : ${montantTotal.toLocaleString()} FCFA\nMode : ${mode}\n\nConfirmez-vous ce paiement ?`);
@@ -955,7 +978,7 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 echeanceId: echeanceId, 
-                clientId: currentClientId,
+                clientId: clientId,
                 montant: montantTotal, 
                 mode: mode, 
                 commentaire: `Paiement échéance - ${new Date().toLocaleDateString()}`,
@@ -980,6 +1003,7 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         showToast("❌ " + error.message, "error");
     }
 }
+
 async function enregistrerPaiementPersonnalise() {
     if (!currentClientId) {
         showToast("Sélectionnez un client", "error");
@@ -1624,7 +1648,7 @@ function imprimerHistorique() {
                                 class="bg-green-500 text-white px-2 py-1 rounded text-xs">
                                 <i class="fab fa-whatsapp"></i> WhatsApp
                             </button>
-                            <button onclick="voirDetails(${a.debiteur_id})" 
+                            <button onclick="voirDetails(${a.debiteur_id}, ${a.echeance_id}, ${a.montant})" 
                                 class="bg-blue-500 text-white px-2 py-1 rounded text-xs">
                                 Voir
                             </button>
@@ -1683,7 +1707,7 @@ function imprimerHistorique() {
                                 class="bg-green-500 text-white px-2 py-1 rounded text-xs">
                                 <i class="fab fa-whatsapp"></i> Rappel
                             </button>
-                            <button onclick="voirDetails(${a.debiteur_id})" 
+                            <button onclick="voirDetails(${a.debiteur_id}, ${a.echeance_id}, ${a.montant})"  
                                 class="bg-blue-500 text-white px-2 py-1 rounded text-xs">
                                 Voir
                             </button>
@@ -1739,6 +1763,64 @@ function imprimerHistorique() {
                 <p>⚠️ Service d'alertes temporairement indisponible</p>
             </div>`;
     }
+}
+
+function voirDetails(debiteur_id, echeance_id = null, montant_echeance = null) {
+    // Ouvrir une modale
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `<div class="bg-white rounded-xl p-6 max-w-md w-full"><div class="loading mx-auto"></div><p class="text-center mt-2">Chargement...</p></div>`;
+    document.body.appendChild(modal);
+    
+    Promise.all([
+        fetch(`/api/debiteurs/${debiteur_id}`).then(r => r.json()),
+        fetch(`/api/echeances/${debiteur_id}`).then(r => r.json())
+    ])
+    .then(([client, echeances]) => {
+        let echeance = null;
+        if (echeance_id) {
+            echeance = echeances.find(e => e.id == echeance_id);
+        }
+        if (!echeance) {
+            echeance = echeances.find(e => e.statut === 'en_attente');
+        }
+        
+        let echeanceHtml = '';
+        if (echeance) {
+            const dateEcheance = new Date(echeance.date).toLocaleDateString();
+            echeanceHtml = `
+                <div class="bg-yellow-50 p-3 rounded-lg mt-3">
+                    <p class="font-bold">📅 Échéance concernée :</p>
+                    <p>📆 Date : ${dateEcheance}</p>
+                    <p>💰 Montant : ${echeance.montant.toLocaleString()} FCFA</p>
+                    <p>📊 Pourcentage : ${echeance.pourcentage}%</p>
+                </div>
+            `;
+        }
+        
+        modal.innerHTML = `
+            <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">👤 ${client.nom}</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 text-2xl">&times;</button>
+                </div>
+                <div class="space-y-2">
+                    <p><strong>📞 Téléphone:</strong> ${client.telephone}</p>
+                    <p><strong>📧 Email:</strong> ${client.email || '-'}</p>
+                    <p><strong>💰 Montant total:</strong> ${client.montant_total.toLocaleString()} FCFA</p>
+                    <p><strong>⚠️ Solde restant:</strong> ${client.solde_restant.toLocaleString()} FCFA</p>
+                    ${echeanceHtml}
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg">Fermer</button>
+                    ${echeance ? `<button disabled class="flex-1 bg-gray-400 text-white py-2 rounded-lg cursor-not-allowed" title="Paiement disponible dans l'onglet Paiements">💰 Payer</button>` : ''}
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        modal.innerHTML = `<div class="bg-white rounded-xl p-6 max-w-md w-full"><h3 class="text-xl font-bold text-red-600">Erreur</h3><p>Impossible de charger les détails</p><button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-gray-500 text-white py-2 rounded-lg">Fermer</button></div>`;
+    });
 }
 
 async function envoyerRappelWhatsAppClient(debiteur_id) {

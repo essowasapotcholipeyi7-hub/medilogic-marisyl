@@ -73,7 +73,7 @@
             <button onclick="showSection('programmation')" class="tab-btn" id="tab-programmation"><i class="fas fa-calendar mr-1"></i> Programmation</button>
             <button onclick="showSection('historique')" class="tab-btn" id="tab-historique"><i class="fas fa-history mr-1"></i> Historique</button>
             <button onclick="showSection('alertes')" class="tab-btn" id="tab-alertes"><i class="fas fa-bell mr-1"></i> Alertes</button>
-            <!--<button onclick="showSection('admin')" class="tab-btn" id="tab-admin"><i class="fas fa-user-shield mr-1"></i> Administration</button>-->
+            <button onclick="showSection('admin')" class="tab-btn" id="tab-admin"><i class="fas fa-user-shield mr-1"></i> Administration</button>
         </div>
 
         <!-- DASHBOARD -->
@@ -934,7 +934,7 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
     const mode = document.getElementById('paiementMode').value;
     const montantTotal = montant + penalite;
     
-    // ✅ Récupérer le client_id depuis l'API
+    // Récupérer le client_id
     let clientId = currentClientId;
     
     if (!clientId) {
@@ -952,6 +952,24 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         }
     }
     
+    // Vérifier que c'est bien la première échéance non payée
+    try {
+        const echeancesResp = await fetch(`/api/echeances/${clientId}`);
+        const echeances = await echeancesResp.json();
+        const echeancesNonPayees = echeances.filter(e => e.statut === 'en_attente' || e.statut === 'partiel');
+        
+        if (echeancesNonPayees.length > 0) {
+            const premiereEcheance = echeancesNonPayees[0];
+            if (premiereEcheance.id !== echeanceId) {
+                const datePremiere = new Date(premiereEcheance.date).toLocaleDateString();
+                showToast(`❌ Vous devez d'abord payer l'échéance du ${datePremiere} (${premiereEcheance.montant.toLocaleString()} FCFA) avant de payer celle-ci.`, "error");
+                return;
+            }
+        }
+    } catch (error) {
+        console.error("Erreur vérification:", error);
+    }
+    
     // Récupérer le nom du client
     let clientNom = 'le client';
     try {
@@ -963,14 +981,14 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
     }
     
     // Demander confirmation
-    const confirmation = confirm(`💰 CONFIRMATION DE PAIEMENT\n\nClient : ${clientNom}\nMontant : ${montantTotal.toLocaleString()} FCFA\nMode : ${mode}\n\nConfirmez-vous ce paiement ?`);
+    const confirmation = confirm(`💰 CONFIRMATION PAIEMENT\n\nClient : ${clientNom}\nMontant : ${montantTotal.toLocaleString()} FCFA\nMode : ${mode}\n\nConfirmez-vous ?`);
     
     if (!confirmation) {
         showToast("Paiement annulé", "info");
         return;
     }
     
-    showToast("💳 Traitement en cours...", "info");
+    showToast("💳 Traitement...", "info");
     
     try {
         const response = await fetch('/api/paiements/echeance', {
@@ -989,7 +1007,46 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         const result = await response.json();
         
         if (result.success) {
-            showToast(`✅ Paiement de ${montantTotal.toLocaleString()} FCFA effectué`, "success");
+            showToast(`✅ Paiement effectué`, "success");
+            
+            // Envoi du message WhatsApp
+            try {
+                const clientResp = await fetch(`/api/debiteurs/${clientId}`);
+                const client = await clientResp.json();
+                
+                const echeancesResp = await fetch(`/api/echeances/${clientId}`);
+                const echeances = await echeancesResp.json();
+                const echeancesNonPayees = echeances.filter(e => e.statut === 'en_attente' || e.statut === 'partiel');
+                
+                let messageWhatsApp = "";
+                
+                if (echeancesNonPayees.length === 0) {
+                    messageWhatsApp = `🎉 FÉLICITATIONS - DETTE SOLDÉE 🎉\n\nBonjour ${client.nom},\n\n✅ Vous avez remboursé INTÉGRALEMENT votre dette de ${client.montant_total.toLocaleString()} FCFA.\n\n💰 Montant total remboursé : ${client.montant_total.toLocaleString()} FCFA\n\nNous vous remercions pour votre confiance et votre ponctualité.\n\n📞 N'hésitez pas à nous contacter pour tout besoin futur.\n\nCordialement,\nL'équipe MARISYL`;
+                } else {
+                    const prochaineEcheance = echeancesNonPayees[0];
+                    const dateProchaine = new Date(prochaineEcheance.date).toLocaleDateString();
+                    const montantProchain = prochaineEcheance.montant;
+                    const nouveauSolde = client.solde_restant - montantTotal;
+                    
+                    messageWhatsApp = `✅ CONFIRMATION DE PAIEMENT - MARISYL ✅\n\nBonjour ${client.nom},\n\nNous vous confirmons votre paiement de ${montantTotal.toLocaleString()} FCFA.\n\n💰 Nouveau solde : ${nouveauSolde.toLocaleString()} FCFA\n\n📅 Prochaine échéance : ${dateProchaine}\n💰 Montant : ${montantProchain.toLocaleString()} FCFA\n\nMerci de votre ponctualité.\n\nCordialement,\nL'équipe MARISYL`;
+                }
+                
+                if (client.telephone) {
+                    let numero = client.telephone.replace(' ', '').replace('+', '');
+                    if (!numero.startsWith('228')) {
+                        numero = '228' + numero;
+                    }
+                    const whatsappUrl = `https://wa.me/${numero}?text=${encodeURIComponent(messageWhatsApp)}`;
+                    
+                    if (confirm("📱 Envoyer la confirmation par WhatsApp au client ?")) {
+                        window.open(whatsappUrl, '_blank');
+                        showToast("📱 WhatsApp ouvert !", "success");
+                    }
+                }
+            } catch (error) {
+                console.error("Erreur envoi WhatsApp:", error);
+            }
+            
             await chargerEcheancesClient();
             await chargerSelectClients();
             await chargerClients();

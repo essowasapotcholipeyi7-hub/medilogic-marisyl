@@ -389,9 +389,11 @@ def calculer_programmation():
         if montant_total <= 0:
             return jsonify({'success': False, 'error': 'Montant invalide'})
         
-        montant_tranche = montant_total / nb_tranches
         echeances = []
         date_debut = datetime.now()
+        
+        # Calculer le montant par tranche (arrondi à l'entier)
+        montant_par_tranche = round(montant_total / nb_tranches, 0)
         
         for i in range(nb_tranches):
             if periode == 'hebdomadaire':
@@ -399,10 +401,18 @@ def calculer_programmation():
             else:
                 date_echeance = date_debut + timedelta(days=30*(i+1))
             
+            if i == nb_tranches - 1:
+                # Dernière tranche : ajuster pour que le total soit exact
+                montant = montant_total - (montant_par_tranche * (nb_tranches - 1))
+            else:
+                montant = montant_par_tranche
+            
+            pourcentage = round((montant / montant_total) * 100, 1)
+            
             echeances.append({
                 'date': date_echeance.isoformat(),
-                'montant': round(montant_tranche if i < nb_tranches - 1 else montant_total - (montant_tranche * (nb_tranches - 1)), 0),
-                'pourcentage': round((montant_tranche / montant_total) * 100, 1)
+                'montant': montant,
+                'pourcentage': pourcentage
             })
         
         return jsonify({'success': True, 'echeances': echeances})
@@ -1106,6 +1116,8 @@ def contrat_pdf(debiteur_id):
         th {{ background: #4F46E5; color: white; padding: 10px; }}
         td {{ padding: 8px; border-bottom: 1px solid #ddd; }}
         .signature {{ margin-top: 50px; display: flex; justify-content: space-between; }}
+        .footer {{ margin-top: 30px; text-align: center; color: #666; font-size: 12px; }}
+        .penalty-box {{ margin-top: 30px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 10px; }}
     </style>
     </head>
     <body>
@@ -1120,6 +1132,12 @@ def contrat_pdf(debiteur_id):
         <table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>%</th><th>Statut</th></tr></thead>
         <tbody>{echeances_rows if echeances_rows else '<tr><td colspan="5" style="text-align: center;">Aucune échéance programmée</td></tr>'}</tbody>
         </table>
+        
+        <!-- ✅ MENTION DES PÉNALITÉS AJOUTÉE ICI -->
+        <div class="penalty-box">
+            <strong>⚠️ Conditions de pénalité :</strong> En cas de retard de paiement, une pénalité de <strong>1% par jour</strong> sera appliquée après <strong>14 jours</strong> de retard sur la somme due.
+        </div>
+        
         <div class="signature"><div>Signature client : ___________</div><div>Signature commerçant : ___________</div></div>
         <div class="footer"><p>Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p><p>MARISYL - MediLogic</p></div>
         <script>window.print();</script>

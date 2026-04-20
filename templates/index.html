@@ -324,6 +324,8 @@
                     <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(4)">4 tranches (25% chacune)</button>
                     <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(5)">5 tranches (20% chacune)</button>
                     <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="setTranchesProg(6)">6 tranches (16.7% chacune)</button>
+                    <button type="button" class="tranche-btn px-4 py-2 bg-gray-200 rounded-lg hover:bg-indigo-500 hover:text-white" onclick="showTranchesPerso()">✨ Personnalisé</button>
+                    <input type="number" id="tranchesPerso" placeholder="Nb tranches" class="hidden w-24 border rounded-lg p-2" min="1" max="24">
                 </div>
             </div>
             
@@ -1419,6 +1421,22 @@ function setTranchesProg(nbTranches) {
     </div>`;
     
     document.getElementById('apercuProg').innerHTML = apercu;
+}
+
+function showTranchesPerso() {
+    const input = document.getElementById('tranchesPerso');
+    input.classList.toggle('hidden');
+    if (!input.classList.contains('hidden')) {
+        input.onchange = function() {
+            let nb = parseInt(input.value);
+            if (nb >= 1 && nb <= 50) {
+                setTranchesProg(nb);
+            } else {
+                showToast("Nombre de tranches entre 1 et 50", "error");
+                input.value = '';
+            }
+        };
+    }
 }
 
 // ========== GÉNÉRER ET ENREGISTRER ==========

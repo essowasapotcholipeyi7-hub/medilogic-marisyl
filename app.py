@@ -1146,6 +1146,69 @@ def contrat_pdf(debiteur_id):
     """
     return html
 
+@app.route('/api/client/update-solde', methods=['POST'])
+def update_client_solde():
+    try:
+        data = request.json
+        client_id = data.get('clientId')
+        nouveau_solde = data.get('nouveauSolde', 0)
+        
+        result = sheets.update_solde(client_id, nouveau_solde)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Solde mis à jour'})
+        return jsonify({'success': False, 'error': 'Erreur mise à jour'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+@app.route('/api/paiements/total-rapide', methods=['POST'])
+def paiement_total_rapide():
+    try:
+        data = request.json
+        client_id = data.get('clientId')
+        mode = data.get('mode', 'Espèces')
+        commentaire = data.get('commentaire', 'Paiement total du solde')
+        
+        if not client_id:
+            return jsonify({'success': False, 'error': 'Client non spécifié'})
+        
+        debiteurs = sheets.get_debiteurs()
+        client = next((d for d in debiteurs if d['id'] == client_id), None)
+        
+        if not client:
+            return jsonify({'success': False, 'error': 'Client non trouvé'})
+        
+        # Récupérer toutes les échéances non payées
+        echeances = sheets.get_echeances_by_debiteur(client_id)
+        echeances_non_payees = [e for e in echeances if e['statut'] == 'en_attente' or e['statut'] == 'partiel']
+        
+        if not echeances_non_payees:
+            return jsonify({'success': False, 'error': 'Aucune échéance en attente'})
+        
+        # ✅ Payer toutes les échéances en une fois
+        montant_total = client['solde_restant']
+        
+        # Enregistrer un seul paiement pour le total
+        sheets.add_paiement(client_id, montant_total, mode, commentaire, 'total_rapide')
+        
+        # Marquer toutes les échéances comme payées
+        for e in echeances_non_payees:
+            sheets.update_echeance_statut(e['id'], 'paye')
+        
+        # Mettre à jour le solde à 0
+        sheets.update_solde(client_id, 0)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Paiement total de {montant_total:,.0f} FCFA effectué',
+            'montant': montant_total,
+            'nb_echeances': len(echeances_non_payees)
+        })
+        
+    except Exception as e:
+        print(f"❌ Erreur: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 # ========== INITIALISATION ==========
 @app.route('/api/init')
 def init_sheets():

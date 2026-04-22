@@ -346,7 +346,7 @@
 <div id="section-historique" class="section" style="display:none">
     <div class="bg-white rounded-xl shadow-md p-6">
         <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-            <h2 class="text-lg font-bold">📜 Historique des paiements</h2>
+            <h2 class="text-lg font-bold"> Historique des paiements</h2>
             <div class="flex gap-2">
                 <input type="text" id="searchHistorique" placeholder="🔍 Rechercher par client..." 
                        class="border rounded-lg px-3 py-1 text-sm" onkeyup="filtrerHistorique()">
@@ -791,24 +791,39 @@ async function chargerSelectClients() {
     allClientsPaiement = await response.json();
     
     const selectClient = document.getElementById('paiementClient');
+    // ✅ Filtrer les clients avec solde > 0
+    const clientsAvecSolde = allClientsPaiement.filter(c => c.solde_restant > 0);
+    
     let options = '<option value="">-- Choisir un client --</option>';
-    for (const d of allClientsPaiement) {
+    for (const d of clientsAvecSolde) {
         options += `<option value="${d.id}" data-solde="${d.solde_restant}" data-nom="${d.nom}">
             ${d.nom} - ${d.solde_restant.toLocaleString()} FCFA
         </option>`;
     }
+    
+    // ✅ Message si aucun client avec solde
+    if (clientsAvecSolde.length === 0) {
+        options = '<option value="">-- Aucun client avec solde --</option>';
+        document.getElementById('echeancesClientList').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-green-500">✅ Tous les clients sont à jour ! Aucune dette.<\/td><\/tr>';
+        document.getElementById('btnPayerTotal').classList.add('hidden');
+        document.getElementById('soldeActuel').value = '';
+    }
+    
     selectClient.innerHTML = options;
-    document.getElementById('searchPaiementCount').innerHTML = `${allClientsPaiement.length} client(s)`;
+    document.getElementById('searchPaiementCount').innerHTML = `${clientsAvecSolde.length} client(s) avec solde`;
 }
 
 function filtrerClientsPaiement() {
     const searchTerm = document.getElementById('searchClientPaiement').value.toLowerCase();
     const select = document.getElementById('paiementClient');
     
+    // ✅ Filtrer les clients avec solde > 0
+    const clientsAvecSolde = allClientsPaiement.filter(c => c.solde_restant > 0);
+    
     let visibleCount = 0;
     let options = '<option value="">-- Choisir un client --</option>';
     
-    for (const c of allClientsPaiement) {
+    for (const c of clientsAvecSolde) {
         const nomMatch = c.nom.toLowerCase().includes(searchTerm);
         const telMatch = c.telephone.toLowerCase().includes(searchTerm);
         const emailMatch = c.email && c.email.toLowerCase().includes(searchTerm);
@@ -1182,18 +1197,46 @@ async function payerTotalClient() {
     }
     
     const mode = document.getElementById('paiementMode').value;
-    const confirmation = confirm(`Confirmer le paiement total de ${currentClientSolde.toLocaleString()} FCFA ?`);
     
-    if (!confirmation) return;
+    let clientNom = 'le client';
+    try {
+        const clientResp = await fetch(`/api/debiteurs/${currentClientId}`);
+        const client = await clientResp.json();
+        clientNom = client.nom;
+    } catch (error) {
+        console.error("Erreur récupération nom:", error);
+    }
+    
+    const messageConfirmation = `⚠️ ATTENTION - PAIEMENT TOTAL ⚠️\n\nClient : ${clientNom}\nMontant total à payer : ${currentClientSolde.toLocaleString()} FCFA\nMode : ${mode}\n\nCe paiement va solder TOUTES les échéances restantes.\n\nConfirmez-vous ?`;
+    
+    if (!confirm(messageConfirmation)) {
+        showToast("Paiement total annulé", "info");
+        return;
+    }
+    
+    const montantSaisi = prompt(`💰 CONFIRMATION FINALE\n\nVeuillez saisir le montant à payer (${currentClientSolde.toLocaleString()} FCFA) pour valider :`);
+    
+    if (!montantSaisi) {
+        showToast("Paiement total annulé", "info");
+        return;
+    }
+    
+    const montantSaisiNum = parseFloat(montantSaisi);
+    if (montantSaisiNum !== currentClientSolde) {
+        showToast(`❌ Montant incorrect. Paiement total annulé.`, "error");
+        return;
+    }
+    
+    showToast("💳 Traitement du paiement total...", "info");
     
     try {
-        const response = await fetch('/api/paiements/total', {
+        // ✅ Une seule requête pour tout payer
+        const response = await fetch('/api/paiements/total-rapide', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 clientId: currentClientId, 
-                montant: currentClientSolde, 
-                mode: mode,
+                mode: mode, 
                 commentaire: "Paiement total du solde"
             })
         });
@@ -1201,20 +1244,28 @@ async function payerTotalClient() {
         const result = await response.json();
         
         if (result.success) {
-            showToast(`✅ Solde total payé !`, "success");
-            await chargerEcheancesClient();
-            await chargerSelectClients();
-            await chargerClients();
-            await chargerDashboard();
-            await chargerHistorique();
+            alert(`✅ PAIEMENT TOTAL EFFECTUÉ !\n\nClient : ${clientNom}\nMontant payé : ${result.montant.toLocaleString()} FCFA\nMode : ${mode}\n\n${result.nb_echeances} échéances soldées.\n\n💰 NOUVEAU SOLDE : 0 FCFA`);
+            showToast(`✅ Paiement total effectué !`, "success");
         } else {
-            showToast("❌ " + result.error, "error");
+            showToast(`❌ Erreur: ${result.error}`, "error");
+            return;
         }
+        
+        // Recharger toutes les données
+        await chargerEcheancesClient();
+        await chargerSelectClients();
+        await chargerClients();
+        await chargerDashboard();
+        await chargerHistorique();
+        await chargerAlertes();
+        
     } catch (error) {
+        console.error("Erreur:", error);
         showToast("❌ " + error.message, "error");
     }
 }
-    
+
+
 // ========== VARIABLES GLOBALES POUR PROGRAMMATION ==========
 let allClientsList = [];
 let selectedClientForProg = null;

@@ -189,7 +189,13 @@
 <!-- PAIEMENTS -->
 <div id="section-paiements" class="section" style="display:none">
     <div class="bg-white rounded-xl shadow-md p-6">
-        <h2 class="text-lg font-bold mb-4">💳 Enregistrer un paiement</h2>
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold">💳 Enregistrer un paiement</h2>
+        <button onclick="refreshPaiements()" class="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600 transition">
+            <i class="fas fa-sync-alt mr-1"></i> Actualiser
+        </h2>
+    </div>
+
 
         <!-- Barre de recherche -->
         <div class="mb-4">
@@ -914,7 +920,20 @@ function filtrerClientsPaiement() {
     select.innerHTML = options;
     document.getElementById('searchPaiementCount').innerHTML = `${visibleCount} client(s) trouvé(s)`;
 }
-
+async function refreshPaiements() {
+    showToast("🔄 Actualisation en cours...", "info");
+    
+    // Recharger la liste des clients
+    await chargerSelectClients();
+    
+    // Recharger les échéances du client sélectionné (si un client est sélectionné)
+    const select = document.getElementById('paiementClient');
+    if (select && select.value) {
+        await chargerEcheancesClient();
+    }
+    
+    showToast("✅ Données actualisées", "success");
+}
 async function chargerEcheancesClient() {
     const select = document.getElementById('paiementClient');
     const clientId = select.value;

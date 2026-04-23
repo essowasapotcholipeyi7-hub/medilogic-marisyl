@@ -23,6 +23,10 @@
         .toast-info { background: #3B82F6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .progress-bar { transition: width 0.5s ease; }
+        .toast-warning {
+    background: #333333 !important;
+    color: white !important;
+}
     </style>
 </head>
 <body>
@@ -1044,7 +1048,10 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
     penalite = parseFloat(penalite) || 0;
     const mode = document.getElementById('paiementMode').value;
     const montantTotal = montant + penalite;
-    
+
+    // ✅ AFFICHER L'AVERTISSEMENT POUR LES PAIEMENTS SUCCESSIFS
+    showToast("⚠️ Limite de requêtes API. Attendez quelques secondes entre chaque paiement.", "warning");
+
     // Récupérer le client_id
     let clientId = currentClientId;
     
@@ -1119,12 +1126,15 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
 
         if (result.success) {
             showToast(`✅ Paiement effectué`, "success");
-            
-            // ✅ RECHARGER LES DONNÉES APRÈS PAIEMENT
+    
+            // ✅ AJOUTER UN DÉLAI DE 2 SECONDES POUR ÉVITER LE QUOTA GOOGLE
+            showToast("⏳ Attendez 2 secondes avant le prochain paiement...", "info");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+    
             // Recharger le client
             const clientResp = await fetch(`/api/debiteurs/${clientId}`);
             const client = await clientResp.json();
-            
+    
             // Recharger les échéances APRÈS le paiement
             const echeancesRespApres = await fetch(`/api/echeances/${clientId}`);
             const echeancesApres = await echeancesRespApres.json();
@@ -1175,6 +1185,7 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         console.error("Erreur:", error);
         showToast("❌ " + error.message, "error");
     }
+        
 }
 async function enregistrerPaiementPersonnalise() {
     if (!currentClientId) {

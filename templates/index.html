@@ -118,26 +118,33 @@
     </div>
 </div>
 
-        <!-- VENTE DIRECTE (acompte 60%) -->
-        <div id="section-vente" class="section" style="display:none">
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-lg font-bold mb-4 text-green-600"><i class="fas fa-shopping-cart mr-2"></i> Vente directe (acompte 60%)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div><label class="block text-sm font-medium mb-1">Nom complet *</label><input type="text" id="venteNom" class="w-full border rounded-lg p-2"></div>
-                    <div><label class="block text-sm font-medium mb-1">Téléphone *</label><input type="tel" id="venteTelephone" class="w-full border rounded-lg p-2"></div>
-                    <div><label class="block text-sm font-medium mb-1">Email</label><input type="email" id="venteEmail" class="w-full border rounded-lg p-2"></div>
-                    <div><label class="block text-sm font-medium mb-1">Montant total *</label><input type="number" id="venteMontant" class="w-full border rounded-lg p-2" oninput="calculerVente()"></div>
+        <!-- VENTE DIRECTE -->
+<div id="section-vente" class="section" style="display:none">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4 text-green-600"><i class="fas fa-shopping-cart mr-2"></i> Vente directe</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-sm font-medium mb-1">Nom complet *</label><input type="text" id="venteNom" class="w-full border rounded-lg p-2"></div>
+            <div><label class="block text-sm font-medium mb-1">Téléphone *</label><input type="tel" id="venteTelephone" class="w-full border rounded-lg p-2"></div>
+            <div><label class="block text-sm font-medium mb-1">Email</label><input type="email" id="venteEmail" class="w-full border rounded-lg p-2"></div>
+            <div><label class="block text-sm font-medium mb-1">Montant total *</label><input type="number" id="venteMontant" class="w-full border rounded-lg p-2" oninput="calculerVente()"></div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Pourcentage acompte (%)</label>
+                <div class="flex gap-2">
+                    <input type="number" id="ventePourcentage" class="w-full border rounded-lg p-2" value="60" step="5" min="0" max="100" oninput="calculerVente()">
+                    <span class="flex items-center text-gray-500">%</span>
                 </div>
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div><div class="text-sm text-gray-500">Total</div><div class="font-bold text-xl" id="venteTotal">0 FCFA</div></div>
-                        <div><div class="text-sm text-gray-500">Acompte 60%</div><div class="font-bold text-xl text-green-600" id="venteAcompte">0 FCFA</div></div>
-                        <div><div class="text-sm text-gray-500">Solde à échelonner</div><div class="font-bold text-xl text-red-600" id="venteSolde">0 FCFA</div></div>
-                    </div>
-                </div>
-                <button onclick="validerVenteDirecte()" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">✅ Enregistrer la vente</button>
             </div>
         </div>
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div><div class="text-sm text-gray-500">Total</div><div class="font-bold text-xl" id="venteTotal">0 FCFA</div></div>
+                <div><div class="text-sm text-gray-500">Acompte</div><div class="font-bold text-xl text-green-600" id="venteAcompte">0 FCFA</div></div>
+                <div><div class="text-sm text-gray-500">Solde à échelonner</div><div class="font-bold text-xl text-red-600" id="venteSolde">0 FCFA</div></div>
+            </div>
+        </div>
+        <button onclick="validerVenteDirecte()" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">✅ Enregistrer la vente</button>
+    </div>
+</div>
 
         <!-- SAISIE MANUELLE -->
         <div id="section-manuel" class="section" style="display:none">
@@ -559,50 +566,79 @@
     
     // ========== VENTE DIRECTE ==========
     function calculerVente() {
-        const montant = parseFloat(document.getElementById('venteMontant').value) || 0;
-        const acompte = montant * 0.6;
-        const solde = montant * 0.4;
-        document.getElementById('venteTotal').innerHTML = montant.toLocaleString() + ' FCFA';
-        document.getElementById('venteAcompte').innerHTML = acompte.toLocaleString() + ' FCFA';
-        document.getElementById('venteSolde').innerHTML = solde.toLocaleString() + ' FCFA';
-    }
+    const montant = parseFloat(document.getElementById('venteMontant').value) || 0;
+    const pourcentage = parseFloat(document.getElementById('ventePourcentage').value) || 60;
+    
+    const acompte = montant * (pourcentage / 100);
+    const solde = montant - acompte;
+    
+    document.getElementById('venteTotal').innerHTML = montant.toLocaleString() + ' FCFA';
+    document.getElementById('venteAcompte').innerHTML = acompte.toLocaleString() + ' FCFA';
+    document.getElementById('venteSolde').innerHTML = solde.toLocaleString() + ' FCFA';
+}
     
     async function validerVenteDirecte() {
-        const nom = document.getElementById('venteNom').value;
-        const telephone = document.getElementById('venteTelephone').value;
-        const email = document.getElementById('venteEmail').value;
-        const montant_total = parseFloat(document.getElementById('venteMontant').value);
-        
-        if (!nom || !telephone || !montant_total) {
-            showToast("Remplissez tous les champs obligatoires", "error");
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/vente-directe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nom, telephone, email, montant_total })
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                showToast(`✅ Vente enregistrée ! Acompte: ${result.acompte.toLocaleString()} FCFA`, "success");
-                document.getElementById('venteNom').value = '';
-                document.getElementById('venteTelephone').value = '';
-                document.getElementById('venteEmail').value = '';
-                document.getElementById('venteMontant').value = '';
-                calculerVente();
-                chargerDashboard();
-                chargerClients();
-                chargerSelectClients();
-            } else {
-                showToast("❌ " + (result.error || "Erreur"), "error");
-            }
-        } catch (error) {
-            showToast("❌ " + error.message, "error");
-        }
+    const btn = event.target;
+    
+    if (btn.disabled) return;
+    
+    const nom = document.getElementById('venteNom').value;
+    const telephone = document.getElementById('venteTelephone').value;
+    const email = document.getElementById('venteEmail').value;
+    const montant_total = parseFloat(document.getElementById('venteMontant').value);
+    const pourcentage = parseFloat(document.getElementById('ventePourcentage').value) || 60;
+    
+    if (!nom || !telephone || !montant_total) {
+        showToast("Remplissez tous les champs", "error");
+        return;
     }
+    
+    const acompte = montant_total * (pourcentage / 100);
+    const solde = montant_total - acompte;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading"></div> Enregistrement...';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    try {
+        const response = await fetch('/api/vente-directe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                nom, 
+                telephone, 
+                email, 
+                montant_total,
+                pourcentage: pourcentage,
+                acompte: acompte,
+                solde: solde
+            })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`✅ Vente enregistrée ! Acompte: ${result.acompte.toLocaleString()} FCFA (${pourcentage}%)`, "success");
+            document.getElementById('venteNom').value = '';
+            document.getElementById('venteTelephone').value = '';
+            document.getElementById('venteEmail').value = '';
+            document.getElementById('venteMontant').value = '';
+            document.getElementById('ventePourcentage').value = '60';
+            calculerVente();
+            chargerDashboard();
+            chargerClients();
+            chargerSelectClients();
+            chargerClientsProg();
+        } else {
+            showToast("❌ " + (result.error || "Erreur"), "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Enregistrer la vente';
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
     
     // ========== SAISIE MANUELLE ==========
     function calculerManuel() {
@@ -611,41 +647,54 @@
     }
     
     async function validerSaisieManuelle() {
-        const nom = document.getElementById('manuelNom').value;
-        const telephone = document.getElementById('manuelTelephone').value;
-        const email = document.getElementById('manuelEmail').value;
-        const montant_total = parseFloat(document.getElementById('manuelMontant').value);
-        
-        if (!nom || !telephone || !montant_total) {
-            showToast("Remplissez tous les champs obligatoires", "error");
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/saisie-manuelle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nom, telephone, email, montant_total })
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                showToast("✅ Dette enregistrée avec succès !", "success");
-                document.getElementById('manuelNom').value = '';
-                document.getElementById('manuelTelephone').value = '';
-                document.getElementById('manuelEmail').value = '';
-                document.getElementById('manuelMontant').value = '';
-                calculerManuel();
-                chargerDashboard();
-                chargerClients();
-                chargerSelectClients();
-            } else {
-                showToast("❌ " + (result.error || "Erreur"), "error");
-            }
-        } catch (error) {
-            showToast("❌ " + error.message, "error");
-        }
+    const btn = event.target;
+    
+    if (btn.disabled) return;
+    
+    const nom = document.getElementById('manuelNom').value;
+    const telephone = document.getElementById('manuelTelephone').value;
+    const email = document.getElementById('manuelEmail').value;
+    const montant_total = parseFloat(document.getElementById('manuelMontant').value);
+    
+    if (!nom || !telephone || !montant_total) {
+        showToast("Remplissez tous les champs", "error");
+        return;
     }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading"></div> Enregistrement...';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    try {
+        const response = await fetch('/api/saisie-manuelle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom, telephone, email, montant_total })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast("✅ Dette enregistrée avec succès !", "success");
+            document.getElementById('manuelNom').value = '';
+            document.getElementById('manuelTelephone').value = '';
+            document.getElementById('manuelEmail').value = '';
+            document.getElementById('manuelMontant').value = '';
+            calculerManuel();
+            chargerDashboard();
+            chargerClients();
+            chargerSelectClients();
+            chargerClientsProg();
+        } else {
+            showToast("❌ " + (result.error || "Erreur"), "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Enregistrer la dette';
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
     
     // ========== DASHBOARD ==========
     async function chargerDashboard() {
@@ -680,6 +729,7 @@
     }
     
     // ========== CLIENTS ==========
+
     async function chargerClients() {
     const tbody = document.getElementById('listeClients');
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="loading"></div> Chargement...<\/td><\/tr>';
@@ -692,7 +742,9 @@
         }
         
         const clients = await response.json();
-        console.log("📊 Clients reçus:", clients); // Debug
+        
+        // ✅ Trier par ID décroissant (le plus récent en premier)
+        const clientsTries = [...clients].sort((a, b) => b.id - a.id);
         
         if (!clients || clients.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">📭 Aucun client<\/td><\/tr>';
@@ -700,7 +752,7 @@
         }
         
         let html = '';
-        for (const c of clients) {
+        for (const c of clientsTries) {
             const progression = c.montant_total > 0 ? ((c.montant_total - c.solde_restant) / c.montant_total * 100).toFixed(1) : 0;
             html += `<tr class="border-b hover:bg-gray-50">
                 <td class="p-2">${c.id}</td>
@@ -716,7 +768,7 @@
                         </div>
                         <span class="text-xs">${progression}%</span>
                     </div>
-                </td>
+                 </td>
                 <td class="p-2 text-center">
                     <button onclick="voirContrat(${c.id})" class="bg-blue-500 text-white p-1 rounded mr-1" title="Contrat"><i class="fas fa-file-contract"></i></button>
                     <button onclick="sendWhatsApp(${c.id})" class="bg-green-600 text-white p-1 rounded mr-1" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>
@@ -726,13 +778,13 @@
             </tr>`;
         }
         tbody.innerHTML = html;
-        console.log("✅ Affichage terminé,", clients.length, "clients");
+        console.log("✅ Affichage terminé,", clientsTries.length, "clients (du plus récent au plus ancien)");
         
     } catch (error) {
         console.error("❌ Erreur chargerClients:", error);
         tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ Erreur: ${error.message}<\/td><\/tr>`;
     }
-}    
+}
     function filtrerClients() {
         const search = document.getElementById('searchClient').value.toLowerCase();
         const rows = document.querySelectorAll('#listeClients tr');
@@ -747,41 +799,64 @@
     }
     
     async function ajouterClient() {
-        const nom = document.getElementById('newNom').value;
-        const telephone = document.getElementById('newTelephone').value;
-        const email = document.getElementById('newEmail').value;
-        const montant_total = parseFloat(document.getElementById('newMontant').value);
-        
-        if (!nom || !telephone || !montant_total) {
-            showToast("Remplissez tous les champs obligatoires", "error");
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/debiteurs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nom, telephone, email, montant_total, solde_restant: montant_total })
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                showToast("✅ Client ajouté avec succès", "success");
-                closeModal('modalAddClient');
-                document.getElementById('newNom').value = '';
-                document.getElementById('newTelephone').value = '';
-                document.getElementById('newEmail').value = '';
-                document.getElementById('newMontant').value = '';
-                chargerClients();
-                chargerDashboard();
-                chargerSelectClients();
-            } else {
-                showToast("❌ " + (result.error || "Erreur"), "error");
-            }
-        } catch (error) {
-            showToast("❌ " + error.message, "error");
-        }
+    const btn = event.target;
+    
+    // ✅ Désactiver le bouton pour éviter les doubles clics
+    if (btn.disabled) {
+        return; // Déjà en cours
     }
+    
+    const nom = document.getElementById('newNom').value;
+    const telephone = document.getElementById('newTelephone').value;
+    const email = document.getElementById('newEmail').value;
+    const montant_total = parseFloat(document.getElementById('newMontant').value);
+    
+    if (!nom || !telephone || !montant_total) {
+        showToast("Remplissez tous les champs obligatoires", "error");
+        return;
+    }
+    
+    // ✅ Désactiver le bouton
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading"></div> Enregistrement...';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    try {
+        const response = await fetch('/api/debiteurs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom, telephone, email, montant_total, solde_restant: montant_total })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast("✅ Client ajouté avec succès", "success");
+            closeModal('modalAddClient');
+            
+            // Réinitialiser le formulaire
+            document.getElementById('newNom').value = '';
+            document.getElementById('newTelephone').value = '';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newMontant').value = '';
+            
+            // Recharger les données
+            await chargerClients();
+            await chargerDashboard();
+            await chargerSelectClients();
+            await chargerClientsProg();
+        } else {
+            showToast("❌ " + (result.error || "Erreur"), "error");
+        }
+    } catch (error) {
+        showToast("❌ " + error.message, "error");
+    } finally {
+        // ✅ Réactiver le bouton
+        btn.disabled = false;
+        btn.innerHTML = '✅ Enregistrer';
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
     
     // ========== PAIEMENTS ==========
 let allClientsPaiement = [];
@@ -1022,46 +1097,50 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
         });
         
         const result = await response.json();
-        
+
         if (result.success) {
             showToast(`✅ Paiement effectué`, "success");
             
-            // Envoi du message WhatsApp
-            try {
-                const clientResp = await fetch(`/api/debiteurs/${clientId}`);
-                const client = await clientResp.json();
+            // ✅ RECHARGER LES DONNÉES APRÈS PAIEMENT
+            // Recharger le client
+            const clientResp = await fetch(`/api/debiteurs/${clientId}`);
+            const client = await clientResp.json();
+            
+            // Recharger les échéances APRÈS le paiement
+            const echeancesRespApres = await fetch(`/api/echeances/${clientId}`);
+            const echeancesApres = await echeancesRespApres.json();
+            const echeancesNonPayeesApres = echeancesApres.filter(e => e.statut === 'en_attente' || e.statut === 'partiel');
+            
+            // Utiliser le nouveau solde depuis la réponse du serveur
+            const nouveauSolde = result.nouveau_solde !== undefined ? result.nouveau_solde : client.solde_restant;
+            
+            let messageWhatsApp = "";
+            
+            // ✅ Vérifier s'il reste des échéances APRÈS le paiement
+            if (echeancesNonPayeesApres.length === 0) {
+                // Plus aucune échéance → Dette soldée
+                messageWhatsApp = `🎉 FÉLICITATIONS - DETTE SOLDÉE 🎉\n\nBonjour ${client.nom},\n\n✅ Vous avez remboursé INTÉGRALEMENT votre dette de ${client.montant_total.toLocaleString()} FCFA.\n\n💰 Montant total remboursé : ${client.montant_total.toLocaleString()} FCFA\n\nNous vous remercions pour votre confiance et votre ponctualité.\n\n📞 N'hésitez pas à nous contacter pour tout besoin futur.\n\nCordialement,\nL'équipe MARISYL`;
+            } else {
+                // Il reste des échéances → Message normal
+                const prochaineEcheance = echeancesNonPayeesApres[0];
+                const dateProchaine = new Date(prochaineEcheance.date).toLocaleDateString();
+                const montantProchain = prochaineEcheance.montant;
                 
-                const echeancesResp = await fetch(`/api/echeances/${clientId}`);
-                const echeances = await echeancesResp.json();
-                const echeancesNonPayees = echeances.filter(e => e.statut === 'en_attente' || e.statut === 'partiel');
-                
-                let messageWhatsApp = "";
-                
-                if (echeancesNonPayees.length === 0) {
-                    messageWhatsApp = `🎉 FÉLICITATIONS - DETTE SOLDÉE 🎉\n\nBonjour ${client.nom},\n\n✅ Vous avez remboursé INTÉGRALEMENT votre dette de ${client.montant_total.toLocaleString()} FCFA.\n\n💰 Montant total remboursé : ${client.montant_total.toLocaleString()} FCFA\n\nNous vous remercions pour votre confiance et votre ponctualité.\n\n📞 N'hésitez pas à nous contacter pour tout besoin futur.\n\nCordialement,\nL'équipe MARISYL`;
-                } else {
-                    const prochaineEcheance = echeancesNonPayees[0];
-                    const dateProchaine = new Date(prochaineEcheance.date).toLocaleDateString();
-                    const montantProchain = prochaineEcheance.montant;
-                    const nouveauSolde = client.solde_restant - montantTotal;
-                    
-                    messageWhatsApp = `✅ CONFIRMATION DE PAIEMENT - MARISYL ✅\n\nBonjour ${client.nom},\n\nNous vous confirmons votre paiement de ${montantTotal.toLocaleString()} FCFA.\n\n💰 Nouveau solde : ${nouveauSolde.toLocaleString()} FCFA\n\n📅 Prochaine échéance : ${dateProchaine}\n💰 Montant : ${montantProchain.toLocaleString()} FCFA\n\nMerci de votre ponctualité.\n\nCordialement,\nL'équipe MARISYL`;
+                messageWhatsApp = `✅ CONFIRMATION DE PAIEMENT - MARISYL ✅\n\nBonjour ${client.nom},\n\nNous vous confirmons votre paiement de ${montantTotal.toLocaleString()} FCFA.\n\n💰 Nouveau solde : ${nouveauSolde.toLocaleString()} FCFA\n\n📅 Prochaine échéance : ${dateProchaine}\n💰 Montant : ${montantProchain.toLocaleString()} FCFA\n\nMerci de votre ponctualité.\n\nCordialement,\nL'équipe MARISYL`;
+            }
+            
+            // Envoyer le message WhatsApp
+            if (client.telephone) {
+                let numero = client.telephone.replace(' ', '').replace('+', '');
+                if (!numero.startsWith('228')) {
+                    numero = '228' + numero;
                 }
+                const whatsappUrl = `https://wa.me/${numero}?text=${encodeURIComponent(messageWhatsApp)}`;
                 
-                if (client.telephone) {
-                    let numero = client.telephone.replace(' ', '').replace('+', '');
-                    if (!numero.startsWith('228')) {
-                        numero = '228' + numero;
-                    }
-                    const whatsappUrl = `https://wa.me/${numero}?text=${encodeURIComponent(messageWhatsApp)}`;
-                    
-                    if (confirm("📱 Envoyer la confirmation par WhatsApp au client ?")) {
-                        window.open(whatsappUrl, '_blank');
-                        showToast("📱 WhatsApp ouvert !", "success");
-                    }
+                if (confirm("📱 Envoyer la confirmation par WhatsApp au client ?")) {
+                    window.open(whatsappUrl, '_blank');
+                    showToast("📱 WhatsApp ouvert !", "success");
                 }
-            } catch (error) {
-                console.error("Erreur envoi WhatsApp:", error);
             }
             
             await chargerEcheancesClient();
@@ -1074,10 +1153,10 @@ async function payerEcheanceClient(echeanceId, montant, penalite) {
             showToast("❌ " + (result.error || "Erreur"), "error");
         }
     } catch (error) {
+        console.error("Erreur:", error);
         showToast("❌ " + error.message, "error");
     }
 }
-
 async function enregistrerPaiementPersonnalise() {
     if (!currentClientId) {
         showToast("Sélectionnez un client", "error");

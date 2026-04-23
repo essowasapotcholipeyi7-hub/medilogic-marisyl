@@ -51,9 +51,9 @@ def vente_directe():
     telephone = data.get('telephone')
     email = data.get('email')
     montant_total = data.get('montant_total', 0)
-    
-    acompte = montant_total * 0.6
-    solde = montant_total * 0.4
+    pourcentage = data.get('pourcentage', 60)
+    acompte = data.get('acompte', montant_total * pourcentage / 100)
+    solde = data.get('solde', montant_total - acompte)
     
     debiteur = {
         'nom': nom,
@@ -62,14 +62,14 @@ def vente_directe():
         'montant_total': montant_total,
         'acompte': acompte,
         'solde_restant': solde,
-        'notes': f"Vente directe - Acompte 60% : {acompte} FCFA"
+        'notes': f"Vente directe - Acompte {pourcentage}% : {acompte} FCFA"
     }
     
     result = sheets.add_debiteur(debiteur)
     
     if result.get('success'):
-        sheets.add_paiement(result['id'], acompte, 'Espèces', f"Acompte 60% - Vente directe")
-        return jsonify({'success': True, 'id': result['id'], 'acompte': acompte, 'solde': solde})
+        sheets.add_paiement(result['id'], acompte, 'Espèces', f"Acompte {pourcentage}% - Vente directe")
+        return jsonify({'success': True, 'id': result['id'], 'acompte': acompte, 'solde': solde, 'pourcentage': pourcentage})
     
     return jsonify({'success': False, 'error': result.get('error')})
 
